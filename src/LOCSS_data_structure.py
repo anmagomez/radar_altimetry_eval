@@ -48,4 +48,15 @@ class Gauge:
             
         if isinstance(notes, Note) or isinstance(notes, List) :
             self.note=notes
+
+class GageCollection:
+    
+    def __init__(self, gages_collection):
+        self.df=gages_collection
+    def __init__(self):
+        self.df=pd.DataFrame()
+
+    def add_gauge(self, name, guage_id, install_date, photo, unit, lat, long, CRS, elevation, local_GPS, elev_source,notes):
         
+    def add_gages(self, gages): #gages must be a dataframe
+        self.df=df.append(gages)
