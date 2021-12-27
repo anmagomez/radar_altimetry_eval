@@ -35,7 +35,7 @@ class Gauge:
     
     def __init__(self, name, guage_id, install_date, photo, unit, lat, long, CRS, elevation, local_GPS, elev_source,notes):
         self.name=name
-        self.guage_id=guage_id
+        self.visible_id=guage_id
         self.install_date=install_date
         self.photo=photo
         self.unit=unit
@@ -48,6 +48,15 @@ class Gauge:
             
         if isinstance(notes, Note) or isinstance(notes, List) :
             self.note=notes
+        
+        self.country=self.get_country(gauge_id)
+        self.subregion=self.get_country(gauge_id)
+   
+    def set_id(self, gauge_id):
+        #cod format LakeInitials (2 letters), _, country (2 letters), 
+        self.country=self.get_country(gauge_id)
+        self.subregion=self.get_country(gauge_id)
+        return g_id
 
 class GageCollection:
     
@@ -57,6 +66,8 @@ class GageCollection:
         self.df=pd.DataFrame()
 
     def add_gauge(self, name, guage_id, install_date, photo, unit, lat, long, CRS, elevation, local_GPS, elev_source,notes):
+    
+    def add_gages_from_loccs_df(self, df_locss):
         
     def add_gages(self, gages): #gages must be a dataframe
         self.df=df.append(gages)
