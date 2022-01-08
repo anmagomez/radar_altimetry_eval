@@ -15,7 +15,8 @@ class Coordinate:
         
 class Measurement: 
     
-    def __init__ (self, value, type_value): 
+    def __init__ (self, date, value, type_value): 
+        self.date=date
         self.value=lat
         self.type_value=type_value
         
@@ -58,16 +59,30 @@ class Gauge:
         self.subregion=self.get_country(gauge_id)
         return g_id
 
-class GageCollection:
+class GaugeCollection:
+    test_gages=["MFN2","BPN2","119"]
     
-    def __init__(self, gages_collection):
+    def __init__(self, gages_collection, fd_id):
         self.df=gages_collection
+        self.fd_id=fd_id
+        
     def __init__(self):
         self.df=pd.DataFrame()
-
-    def add_gauge(self, name, guage_id, install_date, photo, unit, lat, long, CRS, elevation, local_GPS, elev_source,notes):
     
-    def add_gages_from_loccs_df(self, df_locss):
+    def filter_test_gages(self, df = None, fd_id=None):
+        """Filter LOCSS testing gages first. This method doesn't modify the internal gage collection. 
+            df is the gauge list. If it is not provided the internal df attribute is used """
+        if df is None:
+            df=self.df
+            fd_id=self.fd_id
+            
+        df=df.loc[~df[fd_id].isin(self.test_gages)]
+        return df
+        
+    #def add_gauge(self, name, guage_id, install_date, photo, unit, lat, long, CRS, elevation, local_GPS, elev_source,notes):
+    
+    #def add_gages_from_loccs_df(self, df_locss):
         
     def add_gages(self, gages): #gages must be a dataframe
         self.df=df.append(gages)
+        
