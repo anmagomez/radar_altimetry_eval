@@ -41,10 +41,11 @@ class GroundObservations:
         elif type(station_id)==list:
             for st in station_id:
                 sel_file=[f for f in files if f[:-len(postfix)][-length_id:]==st]
-                df_final=pd.concat(df_final, self.get_one_arhn(path, sel_file, id_fd, station_id, source, date_fd, skip_rows), axis=1)
+                if len(sel_file)==1:
+                    df_final=pd.concat(df_final, self.get_one_arhn(path, sel_file[0], id_fd, station_id, source, date_fd, skip_rows), axis=1)
         else:
             sel_file=[f for f in files if f[:-len(postfix)][-length_id:]==station_id]
-            df_final=get_one_arhn(path, sel_file, id_fd, station_id, source, date_fd, skip_rows)
+            df_final=get_one_arhn(path, sel_file[0], id_fd, station_id, source, date_fd, skip_rows)
         return df_final
               
         
