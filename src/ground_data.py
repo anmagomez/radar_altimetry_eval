@@ -18,6 +18,28 @@ class GroundObservations:
         if source=='ARHN':
             df=self.get_arhn(source, date_fd, id_fd, height_fd, station_id, path, skip_rows)
             return df
+        if source=='USGS':
+            df=self.get_usgs_file(date_fd, id_fd, height_fd, station_id, path, skip_rows)
+            df['source']=source
+            return df
+    
+    def get_usgs_file(self, date_fd=None, id_fd=None, height_fd=None, station_id=None, path=None, skip_rows=0):
+        if path is None:
+            full_path='../data/USGS_data_gages.csv'
+        if date_fd is None:
+            date_fd='Date'
+        if id_fd is None:
+            id_fd='site_no'
+        if height_fd is None:
+            height_fd='X_00065_0003'
+        df=pd.read_csv(full_path, parse_dates=[date_fd])
+        df[id_fd]=df[id_fd].astype(str).str.strip()
+        if station_id is not None:
+            if type(station_id)==list:
+                df=df.loc[df[id_fd].isin(station_id)]
+            else:
+                df=df.loc[df[id_fd]==station_id]
+        return df
         
     def get_arhn(self, source, date_fd=None, id_fd=None, height_fd=None, station_id=None, path=None,skip_rows=0):
         if path is None:
@@ -47,7 +69,7 @@ class GroundObservations:
                     df_final=pd.concat((df_final, df), axis=0)
         else:
             sel_file=[f for f in files if f[:-len(postfix)][-length_id:]==station_id]
-            df_final=get_one_arhn(path, sel_file[0], id_fd, station_id, source, date_fd, skip_rows)
+            df_final=self.get_one_arhn(path, sel_file[0], id_fd, station_id, source, date_fd, skip_rows)
         return df_final
               
         
@@ -92,4 +114,11 @@ class GroundObservations:
         return df_locss_filtered
             
         
-        
+        def _unify_cols(self,df, id_fd,date_fd,height_fd, filter_others_out=False):
+            '''Pending 
+            Validate the columns are not already in the dataframe
+            Implement filter_out
+            '''
+            df=df.rename(columns={id_fd:'gauge_id',
+                                 date_fd:'date',
+                                 height_fd:'height'})
