@@ -16,7 +16,8 @@ class GroundObservations:
             df=self.get_locss(source,date_fd, id_fd, height_fd, station_id)
             return df
         if source=='ARHN':
-            df=self.get_arhn(source, date_fd, id_fd, height_fd, station_id, path)
+            df=self.get_arhn(source, date_fd, id_fd, height_fd, station_id, path, skip_rows)
+            return df
         
     def get_arhn(self, source, date_fd=None, id_fd=None, height_fd=None, station_id=None, path=None,skip_rows=0):
         if path is None:
@@ -36,13 +37,14 @@ class GroundObservations:
         df_final=pd.DataFrame()
         if station_id is None:
             for f in files:
-                df_final=pd.concat(df_final, self.get_one_arhn(path, f, id_fd, station_id, source, date_fd, skip_rows), axis=1)
+                df_final=pd.concat((df_final, self.get_one_arhn(path, f, id_fd, station_id, source, date_fd, skip_rows)), axis=0)
         
         elif type(station_id)==list:
             for st in station_id:
                 sel_file=[f for f in files if f[:-len(postfix)][-length_id:]==st]
                 if len(sel_file)==1:
-                    df_final=pd.concat(df_final, self.get_one_arhn(path, sel_file[0], id_fd, station_id, source, date_fd, skip_rows), axis=1)
+                    df=self.get_one_arhn(path, sel_file[0], id_fd, st, source, date_fd, skip_rows)
+                    df_final=pd.concat((df_final, df), axis=0)
         else:
             sel_file=[f for f in files if f[:-len(postfix)][-length_id:]==station_id]
             df_final=get_one_arhn(path, sel_file[0], id_fd, station_id, source, date_fd, skip_rows)
@@ -50,10 +52,11 @@ class GroundObservations:
               
         
     def get_one_arhn(self, path, f, id_fd, station_id, source, date_fd, skip_rows=0):
-        df=pd.read_excel(path+f, skiprows=skip_rows, parse_dates=[date_fd])
+        df=pd.read_excel(path+f, skiprows=skip_rows)
+        
         df['source']=source
         df[id_fd]=station_id
-        df[date_fd]=pd.datetime(df[date_fd], dayfirst=True)
+        df[date_fd]=pd.to_datetime(df[date_fd], dayfirst=True)
         return df
         
     def get_locss(self,source, date_fd=None, id_fd=None, height_fd=None, station_id=None):
