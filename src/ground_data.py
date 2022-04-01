@@ -31,7 +31,7 @@ class GroundObservations:
         if id_fd is None:
             id_fd='site_no'
         if height_fd is None:
-            height_fd='X_00065_0003'
+            height_fd='X_00065_00003'
         df=pd.read_csv(full_path, parse_dates=[date_fd])
         df[id_fd]=df[id_fd].astype(str).str.strip()
         if station_id is not None:
@@ -39,6 +39,7 @@ class GroundObservations:
                 df=df.loc[df[id_fd].isin(station_id)]
             else:
                 df=df.loc[df[id_fd]==station_id]
+        df=self._unify_cols(df, id_fd, date_fd, height_fd)
         return df
         
     def get_arhn(self, source, date_fd=None, id_fd=None, height_fd=None, station_id=None, path=None,skip_rows=0):
@@ -70,6 +71,8 @@ class GroundObservations:
         else:
             sel_file=[f for f in files if f[:-len(postfix)][-length_id:]==station_id]
             df_final=self.get_one_arhn(path, sel_file[0], id_fd, station_id, source, date_fd, skip_rows)
+        
+        df_final=self._unify_cols(df_final, id_fd, date_fd, height_fd)
         return df_final
               
         
@@ -81,7 +84,7 @@ class GroundObservations:
         df[date_fd]=pd.to_datetime(df[date_fd], dayfirst=True)
         return df
         
-    def get_locss(self,source, date_fd=None, id_fd=None, height_fd=None, station_id=None):
+    def get_locss(self,source, date_fd=None, id_fd=None, height_fd=None, station_id=None, all_fd=False):
         #Tested with source only rest values by default
         #For now the data is saved in a fix rout, this has to change later when I get the API
         dir_ts='../data/readings_up_to_20220325.csv'
@@ -101,7 +104,10 @@ class GroundObservations:
 
         gc=GaugeCollection()
         df_locss_filtered=gc.filter_test_gages(df_locss,id_fd)
-        df_locss_filtered=pd.merge(df_locss_filtered, df_coord_locss[[id_fd,'min_height','max_height', 'unit']], on=id_fd)
+        if all==False:
+            df_locss_filtered=pd.merge(df_locss_filtered, df_coord_locss[[id_fd,'min_height','max_height', 'unit']], on=id_fd)
+        else:
+            df_locss_filtered=pd.merge(df_locss_filtered, df_coord_locss, on=id_fd)
         df_locss_filtered=df_locss_filtered.loc[(df_locss_filtered[height_fd]>=df_locss_filtered['min_height'])&
                                                 (df_locss_filtered[height_fd]<=df_locss_filtered['max_height'])].copy()
         df_locss_filtered['source']=source
@@ -111,14 +117,16 @@ class GroundObservations:
             else:
                 df_locss_filtered=df_locss_filtered.loc[df_locss_filtered[id_fd]==station_id]
         
+        df_locss_filtered=self._unify_cols(df_locss_filtered, id_fd, date_fd, height_fd)
         return df_locss_filtered
             
         
-        def _unify_cols(self,df, id_fd,date_fd,height_fd, filter_others_out=False):
-            '''Pending 
-            Validate the columns are not already in the dataframe
-            Implement filter_out
-            '''
-            df=df.rename(columns={id_fd:'gauge_id',
-                                 date_fd:'date',
-                                 height_fd:'height'})
+    def _unify_cols(self,df, id_fd,date_fd,height_fd, filter_others_out=False):
+        '''Pending 
+        Validate the columns are not already in the dataframe
+        Implement filter_out
+        '''
+        df=df.rename(columns={id_fd:'gauge_id',
+                             date_fd:'date',
+                             height_fd:'height'})
+        return df
