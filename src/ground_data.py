@@ -5,7 +5,12 @@ from LOCSS_data_structure import GaugeCollection
 
 class GroundObservations:
     
-    
+    def __init__(self):
+        #Initialize all the path variables. Change when services can be stablished directly 
+        self.usgs_path='../data/USGS_data_gages.csv'
+        self.arhn_path='../data/sel_argentina/'
+        self.locss_r_path='../data/readings_up_to_20220404.csv'
+        self.locss_g_path='../data/gauges_up_to_20220404.csv'
     def read_ground_data(self, source, file_type='.csv', date_fd=None, time_fd=None,
                          id_fd=None, height_fd=None, station_id=None, path=None, skip_rows=0):
         
@@ -25,7 +30,7 @@ class GroundObservations:
     
     def get_usgs_file(self, date_fd=None, id_fd=None, height_fd=None, station_id=None, path=None, skip_rows=0):
         if path is None:
-            full_path='../data/USGS_data_gages.csv'
+            full_path=self.usgs_path
         if date_fd is None:
             date_fd='Date'
         if id_fd is None:
@@ -44,7 +49,7 @@ class GroundObservations:
         
     def get_arhn(self, source, date_fd=None, id_fd=None, height_fd=None, station_id=None, path=None,skip_rows=0):
         if path is None:
-            path='../data/sel_argentina/'
+            path=self.arhn_path
         if date_fd is None:
             date_fd='Fecha y Hora'
         if id_fd is None:
@@ -84,11 +89,11 @@ class GroundObservations:
         df[date_fd]=pd.to_datetime(df[date_fd], dayfirst=True)
         return df
         
-    def get_locss(self,source, date_fd=None, time_fd=None,id_fd=None, height_fd=None, station_id=None, all_fd=False):
+    def get_locss(self,source, date_fd=None, time_fd=None,id_fd=None, height_fd=None, station_id=None, all_fds=False):
         #Tested with source only rest values by default
         #For now the data is saved in a fix rout, this has to change later when I get the API
-        dir_ts='../data/readings_up_to_20220325.csv'
-        dir_loc='../data/gauges_up_to_20220330.csv'
+        dir_ts=self.locss_r_path
+        dir_loc=self.locss_g_path
         if date_fd is None: #Tested
             date_fd='date'
             time_fd='time'
@@ -108,7 +113,7 @@ class GroundObservations:
         #Convert field to datetime
         df_locss_filtered[date_fd]=pd.to_datetime((df_locss_filtered[date_fd].astype(str)+' '+df_locss_filtered[time_fd].astype(str)), 
                                                   format='%Y-%m-%d %H:%M:%S')
-        if all==False:
+        if all_fds==False:
             df_locss_filtered=pd.merge(df_locss_filtered, df_coord_locss[[id_fd,'min_height','max_height', 'unit']], on=id_fd)
         else:
             df_locss_filtered=pd.merge(df_locss_filtered, df_coord_locss, on=id_fd)
