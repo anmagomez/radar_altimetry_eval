@@ -91,10 +91,14 @@ def convert_units(df,height_fd, origin='FEET', to='METER', check_col=True, unit_
     '''
     if origin=='FEET' and to=='METER':
         conversion_factor=0.3048
+    if origin=='FEET' and to=='CM':
+        conversion_factor=30.48
     if origin=='CM' and to=='METER':
         conversion_factor=0.01
     if origin=='METER' and to=='FEET':
         conversion_factor=3.28084
+    if origin=='CM' and to=='FEET':
+        conversion_factor=0.03281
     if origin=='METER' and to=='CM':
         conversion_factor=100
     look_for=origin
@@ -106,10 +110,10 @@ def convert_units(df,height_fd, origin='FEET', to='METER', check_col=True, unit_
                 df_local=df.loc[df['gauge_id']==lc].copy()
                 units=df_local[unit_fd].iloc[0]
                 if look_for==units:
-                    df.loc[:, height_fd+'_m']=df[height_fd]*conversion_factor
+                    df.loc[:, height_fd+'_'+to]=df[height_fd]*conversion_factor
                 else:
-                    df.loc[:, height_fd+'_m']=df[height_fd]
+                    df.loc[:, height_fd+'_'+to]=df[height_fd]
                 df_final=pd.concat((df_final,df), axis=0)
-        df_final=df_final.rename(columns={'height':'height_rw', 'height_m':'height'})
+        df_final=df_final.rename(columns={'height':'height_rw', 'height_'+to:'height'})
     
     return df
