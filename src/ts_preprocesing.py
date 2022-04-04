@@ -116,4 +116,4 @@ def convert_units(df,height_fd, origin='FEET', to='METER', check_col=True, unit_
                 df_final=pd.concat((df_final,df), axis=0)
         df_final=df_final.rename(columns={'height':'height_rw', 'height_'+to:'height'})
     
-    return df
+    return df_final
