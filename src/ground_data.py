@@ -6,14 +6,14 @@ from LOCSS_data_structure import GaugeCollection
 class GroundObservations:
     
     
-    def read_ground_data(self, source, file_type='.csv', date_fd=None, id_fd=None, 
-                         height_fd=None, station_id=None, path=None, skip_rows=0):
+    def read_ground_data(self, source, file_type='.csv', date_fd=None, time_fd=None,
+                         id_fd=None, height_fd=None, station_id=None, path=None, skip_rows=0):
         
         #if source=='USGS':
             #Create function to connect to R and get the station
         
         if source=='LOCSS':
-            df=self.get_locss(source,date_fd, id_fd, height_fd, station_id)
+            df=self.get_locss(source,date_fd, time_fd,id_fd, height_fd, station_id)
             return df
         if source=='ARHN':
             df=self.get_arhn(source, date_fd, id_fd, height_fd, station_id, path, skip_rows)
@@ -84,13 +84,14 @@ class GroundObservations:
         df[date_fd]=pd.to_datetime(df[date_fd], dayfirst=True)
         return df
         
-    def get_locss(self,source, date_fd=None, id_fd=None, height_fd=None, station_id=None, all_fd=False):
+    def get_locss(self,source, date_fd=None, time_fd=None,id_fd=None, height_fd=None, station_id=None, all_fd=False):
         #Tested with source only rest values by default
         #For now the data is saved in a fix rout, this has to change later when I get the API
         dir_ts='../data/readings_up_to_20220325.csv'
         dir_loc='../data/gauges_up_to_20220330.csv'
         if date_fd is None: #Tested
             date_fd='date'
+            time_fd='time'
         if id_fd is None: #Tested
             id_fd='gauge_id' 
         if height_fd is None: #Tested
@@ -103,7 +104,10 @@ class GroundObservations:
         df_coord_locss['location']=df_coord_locss[id_fd].str.slice(2,4)
 
         gc=GaugeCollection()
-        df_locss_filtered=gc.filter_test_gages(df_locss,id_fd)
+        df_locss_filtered=gc.filter_test_gages(df_locss,id_fd).copy()
+        #Convert field to datetime
+        df_locss_filtered[date_fd]=pd.to_datetime((df_locss_filtered[date_fd].astype(str)+' '+df_locss_filtered[time_fd].astype(str)), 
+                                                  format='%Y-%m-%d %H:%M:%S')
         if all==False:
             df_locss_filtered=pd.merge(df_locss_filtered, df_coord_locss[[id_fd,'min_height','max_height', 'unit']], on=id_fd)
         else:
