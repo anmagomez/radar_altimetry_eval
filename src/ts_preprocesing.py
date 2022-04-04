@@ -87,12 +87,17 @@ def get_date_time_cols(df, date_fd):
 def convert_units(df,height_fd, origin='FEET', to='METER', check_col=True, unit_fd='unit',
                   gauge_fd='gauge_id', stations=None):
     '''Convert from ft to m and from m to f
-    currently works for a dataframe that has a combination of ft and m
+    currently works for a dataframe that has a combination of ft, cm and m
     '''
     if origin=='FEET' and to=='METER':
         conversion_factor=0.3048
-        look_for='FEET'
-    
+    if origin=='CM' and to=='METER':
+        conversion_factor=0.01
+    if origin=='METER' and to=='FEET':
+        conversion_factor=3.28084
+    if origin=='METER' and to=='CM':
+        conversion_factor=100
+    look_for=origin
     if check_col:
         df_final=pd.DataFrame()
         if stations is None:
