@@ -72,7 +72,83 @@ def yearmonthdayhourminutesec2decimalyear(year_curr, month_curr, day_curr,
                                            sec_curr/(24.0*60.0*60.0))
     return decimaltime_curr
 
+
+def load_altis(falti, ncoldate, ncolh, nodataalti=-9999):
+    '''
+    Function to load altimetry water elevation in AlTiS csv format
+    Inputs:
+    - falti: AlTiS csv file
+    - ncoldate: name of the column with date of each sample time series
+    - ncolh: name of the column with water elevation time series
+    - nodataalti: no data values in the water elevation time series
+    Outputs:
+    - alti_year: year of all samples in the time series
+    - alti_month: month of all samples in the time series
+    - alti_day: day of all samples in the time series
+    - alti_hour: hour of all samples in the time series
+    - alti_minute: minute of all samples in the time series
+    - alti_height: water elevation of all samples in the time series
+                   referenced to the mission reference geoid (and not the
+                   ellipsoid)
+    '''
+    # Retrieve in-situ water level file header
+    fin = open(falti)
+    isheader = fin.readline()
+    fin.close()
+    isheader_split = (isheader.replace('\n', '')).split(',')
+    # Extract water elevation
+    patterncol = ncolh
+    icolh = [i for i, s in enumerate(isheader_split)
+             if patterncol.lower() in s.lower()]
+    if len(icolh) == 0:
+        print(('Error: no column '+ncolh+' in '+falti))
+        alti_height = None
+    elif len(icolh) > 1:
+        print(('Error: more than one column '+ncolh+' in '+falti))
+        alti_height = None
+    elif len(icolh) == 1:
+        alti_height = np.loadtxt(falti, skiprows=1, delimiter=',',
+                                 usecols=[icolh[0]])
+    # Get lines with no data values
+    ivaliddata = (alti_height > nodataalti).nonzero()
+    # Extract date
+    patterncol = ncoldate
+    icold = [i for i, s in enumerate(isheader_split)
+             if patterncol.lower() in s.lower()]
+    if len(icold) == 0:
+        print(('Error: no column '+ncoldate+' in '+falti))
+        alti_date = None
+    elif len(icold) > 1:
+        print(('Error: more than one column '+ncoldate+' in '+falti))
+        alti_date = None
+    elif len(icold) == 1:
+        alti_date = np.loadtxt(falti, skiprows=1, delimiter=',',
+                               usecols=[icold[0]], dtype='U')
+    if alti_date is None:
+        alti_year = None
+        alti_month = None
+        alti_day = None
+        alti_hour = None
+        alti_minute = None
+    else:
+        split_vecdate = ' '.join(alti_date.tolist()).replace(':', ' ')\
+                        .replace('-', ' ').split(' ')
+        alti_year = np.array(list(map(int, split_vecdate[::6])))
+        alti_month = np.array(list(map(int, split_vecdate[1::6])))
+        alti_day = np.array(list(map(int, split_vecdate[2::6])))
+        alti_hour = np.array(list(map(int, split_vecdate[3::6])))
+        alti_minute = np.array(list(map(int, split_vecdate[4::6])))
+
+    return (alti_year[ivaliddata], alti_month[ivaliddata],
+            alti_day[ivaliddata], alti_hour[ivaliddata],
+            alti_minute[ivaliddata],
+            alti_height[ivaliddata])
+
+
+
 #####Other functions
+
+
 def get_date_time_cols(df, date_fd):
     
     df['year'] =df[date_fd].dt.year
