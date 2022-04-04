@@ -87,7 +87,7 @@ def get_date_time_cols(df, date_fd):
 def convert_units(df,height_fd, origin='FEET', to='METER', check_col=True, unit_fd='unit',
                   gauge_fd='gauge_id', stations=None):
     '''Convert from ft to m and from m to f
-    currently works for a dataframe that has a combination of ft, cm and m
+    currently works for a dataframe that has a combination of ft, cm and m and just 2 units. 
     '''
     if origin=='FEET' and to=='METER':
         conversion_factor=0.3048
@@ -106,14 +106,18 @@ def convert_units(df,height_fd, origin='FEET', to='METER', check_col=True, unit_
         df_final=pd.DataFrame()
         if stations is None:
             stations=df[gauge_fd].unique()
+            
             for lc in stations:
-                df_local=df.loc[df['gauge_id']==lc].copy()
+                # print('\n in function\n')
+                # print(lc, df.loc[df[gauge_fd]==lc].shape)
+                df_local=df.loc[df[gauge_fd]==lc].copy()
                 units=df_local[unit_fd].iloc[0]
                 if look_for==units:
-                    df.loc[:, height_fd+'_'+to]=df[height_fd]*conversion_factor
+                    df_local.loc[:, height_fd+'_'+to]=df_local[height_fd]*conversion_factor
                 else:
-                    df.loc[:, height_fd+'_'+to]=df[height_fd]
-                df_final=pd.concat((df_final,df), axis=0)
-        df_final=df_final.rename(columns={'height':'height_rw', 'height_'+to:'height'})
+                    df_local.loc[:, height_fd+'_'+to]=df_local[height_fd]
+                df_final=pd.concat((df_final,df_local), axis=0)
+                # print(df_final.shape, lc+' '+units)
+        df_final=df_final.rename(columns={height_fd:'height_rw', height_fd+'_'+to:'height'})
     
     return df_final
