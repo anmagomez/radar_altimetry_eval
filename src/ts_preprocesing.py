@@ -251,7 +251,8 @@ def comp_multiple_altis_insi():
         comp_insi_alti(finsi, insiname, falti, altivsname, ncoldate, ncolh,
                        ncolgeoid, outdir, fstat)
 
-def load_altis(falti, ncoldate, ncolh, nodataalti=-9999):
+def load_altis(falti, ncoldate, ncolh, ncolgeoid=None, nodataalti=-9999, wse_ref='g'):
+    ##TODO: Pending to raise exceptions in errors
     '''
     Function to load altimetry water elevation in AlTiS csv format
     Inputs:
@@ -259,6 +260,11 @@ def load_altis(falti, ncoldate, ncolh, nodataalti=-9999):
     - ncoldate: name of the column with date of each sample time series
     - ncolh: name of the column with water elevation time series
     - nodataalti: no data values in the water elevation time series
+    - ncolgeoid: name of the column with geoid elevation time series. Default is None
+    - wse_ref: type of water surface elevation to extract. 
+               'e' means reference to the ellipsoid.
+               'g' (Default) means reference to the geoid
+               If wse_ref='e', ncolgeoid has to contain a valid column
     Outputs:
     - alti_year: year of all samples in the time series
     - alti_month: month of all samples in the time series
@@ -289,6 +295,27 @@ def load_altis(falti, ncoldate, ncolh, nodataalti=-9999):
                                  usecols=[icolh[0]])
     # Get lines with no data values
     ivaliddata = (alti_height > nodataalti).nonzero()
+    if wse_ref=='e':
+        if ncolgeoid is None:
+            print(('Geoid column not specified. WSE will be referenced to the geoide. ncolgeoid= '+str(ncolgeoid)))
+            alti_geoid=None
+        else:
+            # Extract geoid
+            patterncol = ncolgeoid
+            icolg = [i for i, s in enumerate(isheader_split)
+                     if patterncol.lower() in s.lower()]
+            if len(icolg) == 0:
+                print(('Error: no column '+ncolgeoid+' in '+falti))
+                alti_geoid = None
+            elif len(icolg) > 1:
+                print(('Error: more than one column '+ncolgeoid+' in '+falti))
+                alti_geoid = None
+            elif len(icolg) == 1:
+                alti_geoid = np.loadtxt(falti, skiprows=1, delimiter=',',
+                                        usecols=[icolg[0]])
+    else: 
+        alti_geoid=None
+    
     # Extract date
     patterncol = ncoldate
     icold = [i for i, s in enumerate(isheader_split)
@@ -316,11 +343,14 @@ def load_altis(falti, ncoldate, ncolh, nodataalti=-9999):
         alti_day = np.array(list(map(int, split_vecdate[2::6])))
         alti_hour = np.array(list(map(int, split_vecdate[3::6])))
         alti_minute = np.array(list(map(int, split_vecdate[4::6])))
-
+    if alti_geoid is not None:
+        alti_wse = alti_height+alti_geoid
+    else:
+        alti_wse = alti_height
     return (alti_year[ivaliddata], alti_month[ivaliddata],
             alti_day[ivaliddata], alti_hour[ivaliddata],
             alti_minute[ivaliddata],
-            alti_height[ivaliddata])
+            alti_wse[ivaliddata])
 
 
 
