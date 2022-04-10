@@ -73,7 +73,9 @@ class GroundObservations:
             sel_file=[f for f in files if f[start_st:end_st]==station_id]
             df_final=self.get_one_arhn(path, sel_file[0], id_fd, station_id, source, date_fd, skip_rows)
         
+        df_final[height_fd]=pd.to_numeric(df_final[height_fd].apply(lambda x: str(x).replace(',','.')), errors='coerce')
         df_final=self._unify_cols(df_final, id_fd, date_fd, height_fd)
+        
         return df_final
     
     def _get_all_lakes(self, file_list, by=None):
