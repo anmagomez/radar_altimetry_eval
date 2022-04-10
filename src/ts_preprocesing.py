@@ -343,10 +343,10 @@ def load_altis(falti, ncoldate, ncolh, ncolgeoid=None, nodataalti=-9999, wse_ref
         alti_day = np.array(list(map(int, split_vecdate[2::6])))
         alti_hour = np.array(list(map(int, split_vecdate[3::6])))
         alti_minute = np.array(list(map(int, split_vecdate[4::6])))
-    if alti_geoid is not None:
-        alti_wse = alti_height+alti_geoid
-    else:
-        alti_wse = alti_height
+        if alti_geoid is not None:
+            alti_wse = alti_height+alti_geoid
+        else:
+            alti_wse = alti_height
     return (alti_year[ivaliddata], alti_month[ivaliddata],
             alti_day[ivaliddata], alti_hour[ivaliddata],
             alti_minute[ivaliddata],
