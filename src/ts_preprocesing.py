@@ -2,7 +2,8 @@ import os
 import time as tm
 import numpy as np
 from pylab import plt
-from datetime import datetime as dt
+from datetime import datetime, timezone
+import datetime as dt
 import pandas as pd
 import scipy.interpolate as sc
 
@@ -18,14 +19,14 @@ def decimalyear2yearmonthdayhour(self, decimaltime_curr):
     year_curr = int(np.floor(decimaltime_curr))
     # Compute number of days in current year for the input date
     #  (01 January = day 1)
-    start_yearcurr = dt(year=year_curr, month=1, day=1)
-    start_nextyear = dt(year=year_curr+1, month=1, day=1)
+    start_yearcurr = datetime(year=year_curr, month=1, day=1)
+    start_nextyear = datetime(year=year_curr+1, month=1, day=1)
     totnumdays_yearcurr = (tm.mktime(start_nextyear.timetuple()) -
                            tm.mktime(start_yearcurr.timetuple()))/(24.0*3600.0)
     numdays_decimaltimecurr = int(np.floor((decimaltime_curr-year_curr) *
                                            totnumdays_yearcurr)) + 1
     # Compute month for the input date in decimal year
-    ydm_curr = dt.strptime(str(year_curr)+" "+str(numdays_decimaltimecurr),
+    ydm_curr = datetime.strptime(str(year_curr)+" "+str(numdays_decimaltimecurr),
                            "%Y %j")
     month_curr = ydm_curr.month
     day_curr = ydm_curr.day
@@ -49,8 +50,8 @@ def yearday2decimalyear(year_curr, day_curr):
     year_curr = 2019
     day_curr = 34
     '''
-    start_yearcurr = dt(year=int(year_curr), month=1, day=1)
-    start_nextyear = dt(year=int(year_curr)+1, month=1, day=1)
+    start_yearcurr = datetime(year=int(year_curr), month=1, day=1)
+    start_nextyear = datetime(year=int(year_curr)+1, month=1, day=1)
     totnumdays_yearcurr = (tm.mktime(start_nextyear.timetuple()) -
                            tm.mktime(start_yearcurr.timetuple()))/(24.0*3600.0)
     decimalyear = year_curr + float(day_curr)/totnumdays_yearcurr
@@ -63,7 +64,7 @@ def yearmonthdayhourminutesec2decimalyear(year_curr, month_curr, day_curr,
     Function to convert time vector in year, month, day, hour,
     minute and second to correponding decimal year for each date
     '''
-    date_curr = dt(int(year_curr), int(month_curr), int(day_curr),
+    date_curr = datetime(int(year_curr), int(month_curr), int(day_curr),
                    int(hour_curr), int(minute_curr), int(sec_curr))
     dayyear_curr = int(date_curr.strftime("%j"))
     decimaltime_curr = yearday2decimalyear(year_curr, dayyear_curr - 1 +
@@ -355,7 +356,106 @@ def load_altis(falti, ncoldate, ncolh, ncolgeoid=None, nodataalti=-9999, wse_ref
 
 
 #####Other functions
+def get_common_period(df_ts1, df_ts2, date_ts1_fd, date_ts2_fd, delta_days=False, ndays=0):
+    '''Get the common period of time between two time series, df_ts1 and df_ts2
+        WARNING: If not timezone information in any of the dataframe, utc is assumed 
+        It can return the common period + or - a number of days based on df_ts1
+        Assume both dataframe datetime is utc
+        If delta_days=False, ndays is assume =0, returns a common dataframe with the interception between the two dataframes
+        If delta_days=True, ndays has to be different from 0
+            Rules:
+                if df_ts1 starts earlier than df_ts2, common period starts at initial time of df_ts2
+                if df_ts1 starts later than df_ts2, common period starts ndays earlier than initial time of df_ts1
+                if df_ts1 ends earlier than df_ts2, common period ends ndays later than final time of df_ts1
+                if df_ts1 ends later than df_ts2, common period end at the final time of df_ts2
+    '''
+    
+    if delta_days==True and ndays<=0:
+        #TODO:Convert this to raise exceptions
+        print('Error ndays cannot be 0 or lower if delta_days=True')
+        return None
+    if delta_days==False:
+        ndays=0
+    
+    utc=pytz.utc
+    
+    #Min and max dates in df_ts1 and df_ts2
+    if df_ts1[date_ts1_fd].dt.tz is None:
+        df_ts1[date_ts1_fd]=[utc.localize(date) for date in df_ts1[date_ts1_fd]]
+        
+    if df_ts2[date_ts2_fd].dt.tz is None:
+        df_ts2[date_ts2_fd]=[utc.localize(date) for date in df_ts2[date_ts2_fd]]
+        
+    earlier_date_ts1=min(df_ts1[date_ts1_fd])
+    final_date_ts1=max(df_ts1[date_ts1_fd])
+        
+    earlier_date_ts2=min(df_ts2[date_ts2_fd])
+    final_date_ts2=max(df_ts2[date_ts2_fd])
 
+    if earlier_date_ts1 >= earlier_date_ts2:
+        initial_date=earlier_date_ts1 - dt.timedelta(days=ndays)
+    else:
+        initial_date=earlier_date_ts2
+
+    if final_date_ts1 >= final_date_ts2:
+        end_date=final_date_ts2
+    else:
+        end_date=final_date_ts1 + dt.timedelta(days=ndays)
+    
+    #filter dataframes
+    df_ts1=df_ts1.loc[(df_ts1[date_ts1_fd]>=initial_date)&(df_ts1[date_ts1_fd]<=end_date)].copy()
+    df_ts2=df_ts2.loc[(df_ts2[date_ts2_fd]>=initial_date)&(df_ts2[date_ts2_fd]<=end_date)].copy()
+    
+    return (df_ts1, df_ts2)
+
+def moving_window_around_date(df, date, delta, v_fd, d_fd):
+    '''Moving window of a value around a date +- n days defined by delta
+        Inputs:
+            df: Dataframe containing the dates and values
+            date: date around the one the moving window will be done
+            v_fd: name of the value column in df
+            d_fd: name of the date column in df
+        Output:
+           In order in the window
+           median
+           mean 
+           std: standard deviation 
+           number of not null values used for the mean and the median
+           
+    '''
+    df_t=df.loc[(df[d_fd]>=(date-dt.timedelta(days=delta)))&(df[d_fd]<=(date+dt.timedelta(days=delta)))]
+    return df_t[v_fd].median(skipna=True),df_t[v_fd].mean(skipna=True),df_t[v_fd].std(skipna=True), df_t[v_fd].count()
+
+def get_comp_metrics(ts_obs,ts_est):
+    
+    icommon = ((np.isnan(ts_est) == 0) &
+               (np.isnan(ts_obs) == 0)).nonzero()
+    
+    if len(icommon[0]) > 1:
+        datats2_commonts1 = ts_obs[icommon]
+        datats1_commonts2 = ts_est[icommon]
+        # Correlation coefficient
+        vec2corrcoef = np.zeros((2, datats2_commonts1.size))
+        vec2corrcoef[0, :] = datats2_commonts1
+        vec2corrcoef[1, :] = datats1_commonts2
+        matcorr_ts1ts2 = np.corrcoef(vec2corrcoef)
+        corr_ts1ts2 = matcorr_ts1ts2[0, 1]
+        # Nash-Sutcliffe coefficient
+        diffts = (datats2_commonts1 - np.nanmean(datats2_commonts1)) -\
+            (datats1_commonts2 - np.nanmean(datats1_commonts2))
+        ns_ts2 = 1 - np.sum(np.square(diffts)) / \
+            np.sum(np.square(datats1_commonts2 -
+                             np.nanmean(datats1_commonts2)))
+        # RMS from ts2 wrt ts1
+        rmsd_ts2 = np.linalg.norm(diffts)/np.sqrt(diffts.size)
+        # Amplitude of ts1 time series over common date with ts2
+        ampl_ts1 = np.max(datats1_commonts2) - np.min(datats1_commonts2)
+    else:
+        corr_ts1ts2 = np.nan
+        ns_ts2 = np.nan
+        rmsd_ts2 = np.nan
+        ampl_ts1 = np.nan
+    return (corr_ts1ts2, ns_ts2, rmsd_ts2, ampl_ts1)
 
 def get_date_time_cols(df, date_fd, has_hour=False, has_min=False):
     ##TODO: Calculate minutes
