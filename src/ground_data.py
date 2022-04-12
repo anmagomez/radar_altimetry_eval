@@ -64,7 +64,7 @@ class GroundObservations:
             for st in station_id:
                 # df_files=self._get_all_lakes(files)
                 sel_file=[f for f in files if f[start_st:end_st]==st]
-                print(st, sel_file)
+                # print(st, sel_file)
                 if len(sel_file)==1:
                     df=self.get_one_arhn(path, sel_file[0], id_fd, st, source, date_fd, skip_rows)
                     df_final=pd.concat((df_final, df), axis=0)
