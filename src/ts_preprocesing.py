@@ -357,6 +357,49 @@ def load_altis(falti, ncoldate, ncolh, ncolgeoid=None, nodataalti=-9999, wse_ref
 
 
 #####Other functions
+
+def open_match_station_altis(g_path,altis_name, st_fd, df_gts, st_id,altis_date_fd, altis_height_fd, nodataalti=-9999, ncolgeoid=None,wse_ref='g'):
+    '''Match data from altimeter with data from the station
+    Inputs:
+        g_path: Altis observation directory
+        altis_name: Name of the file without extension
+        df_gts: Dataframe with ground observations
+        st_fd: station column name in df_gts
+        st_id; station id
+        altis_date_fd: altis date column name
+        altis_height_fd: altis height column name
+        nodataalti: No data value in altis file. Default:-9999
+        ncolgeoid: Column with the geoid model values to get WSE relative to the ellipsoide. 
+                   Default None: WSE is calculated relative to the geoid
+        wse_ref: Reference to get water surface elevation (WSE). Default: 'g', relative to the geoid
+                 'e', relative to the ellipsoide
+    Outputs:
+        1) altis dataframe
+        2) ground observations for the station st_id
+    '''
+    #Read altis
+    (altiyear, altimonth, altiday, altihour, altiminute, altiwelev)=load_altis(g_path+altis_name+'.csv', 
+                                                                               altis_date_fd, altis_height_fd, 
+                                                                               nodataalti=-9999, ncolgeoid=ncolgeoid, wse_ref=wse_ref)
+    # Compute decimal year from year/month/day from altimetry time series
+    altidy = np.array(list(map(yearmonthdayhourminutesec2decimalyear,
+                           altiyear, altimonth, altiday, altihour,
+                           altiminute, np.zeros(altiday.shape))))
+    
+    dic_altis={'decimal_y':altidy,'height':altiwelev,'year':altiyear, 'month':altimonth, 'day':altiday, 'hour':altihour}
+    
+    df_altis=pd.DataFrame(dic_altis)
+    
+    # df_altis['date']=pd.datetime(df_altis['year'].str.cat(df_altis['month'], sep='-').
+    #                              cat(df_altis['day'], sep='-').cat(df_altis['hour'], sep=' ').cat(':00',sep=''), utc=True)
+    df_altis[altis_date_fd]= df_altis['year'].apply(str)+'-'+df_altis['month'].apply(str)+'-'+df_altis['day'].apply(str)+' '+df_altis['hour'].apply(str)+':00'
+    df_altis[altis_date_fd]=pd.to_datetime(df_altis['date'], utc=True)
+
+    df_altis['name_altis']=altis_name
+    df_gts_st=df_gts.loc[df_gts[st_fd]==st_id].copy()
+    
+    return (df_altis, df_gts_st)
+
 def get_common_period(df_ts1, df_ts2, date_ts1_fd, date_ts2_fd, delta_days=False, ndays=0):
     '''Get the common period of time between two time series, df_ts1 and df_ts2
         WARNING: If not timezone information in any of the dataframe, utc is assumed 
