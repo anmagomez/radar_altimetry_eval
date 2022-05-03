@@ -9,7 +9,7 @@ class GroundObservations:
         #Initialize all the path variables. Change when services can be stablished directly 
         self.usgs_path='../data/USGS_data_gages.csv'
         self.arhn_path='../data/sel_argentina/'
-        self.locss_r_path='../data/readings_up_to_20220404.csv'
+        self.locss_r_path='../data/readings_up_to_20220502.csv'
         self.locss_g_path='../data/gauges_up_to_20220404.csv'
         self.rvbr_path='../data/brasil/'
     
