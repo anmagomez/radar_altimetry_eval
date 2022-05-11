@@ -518,60 +518,40 @@ def get_date_time_cols(df, date_fd, has_hour=False, has_min=False):
 
 def convert_units(df,height_fd, origin='FEET', to='METER', check_col=True, unit_fd='unit',
                   gauge_fd='gauge_id', stations=None):
-    '''Convert from ft to m and from m to f
-    currently works for a dataframe that has a combination of ft, cm and m and just 2 units. 
-    inputs:
-        df: Dataframe with the observations to convert. If is has several units, unit_fd has to indicate the column with unit information
-        origin: Unit origin of the conversion
-        to: unit to convert
-        stations: group of stations to convert. If None (default) if will convert all values in df with the origin units
-        height_fd: Column with the values to convert
-        gauge_fd: name of the column of the station. If None the conversion is apply to all the height_fd column
-        check_col: Verify which rows need to be converted. Default True. False, will convert the whole dataframe df
-    output:
-        dataframe with the units converted. Old values are saved in height_rw column, new values are storage in column height 
-        
+
+    '''Convert from an unit origin that can be ft, cm, or m, to a unit destination that can be
+        ft, cm, m
+       If the original unit is different from origin convert the unit to 'to' units
     '''
-    if origin=='FEET' and to=='METER':
-        conversion_factor=0.3048
-    if origin=='FEET' and to=='CM':
-        conversion_factor=30.48
-    if origin=='CM' and to=='METER':
-        conversion_factor=0.01
-    if origin=='METER' and to=='FEET':
-        conversion_factor=3.28084
-    if origin=='CM' and to=='FEET':
-        conversion_factor=0.03281
-    if origin=='METER' and to=='CM':
-        conversion_factor=100
-    look_for=origin
-    if check_col:
-        df_final=pd.DataFrame()
-        if stations is None:
-            stations=df[gauge_fd].unique()
-            
-            for lc in stations:
-                # print('\n in function\n')
-                # print(lc, df.loc[df[gauge_fd]==lc].shape)
-                df_local=df.loc[df[gauge_fd]==lc].copy()
-                units=df_local[unit_fd].iloc[0]
-                if look_for==units:
-                    df_local.loc[:, height_fd+'_'+to]=df_local[height_fd]*conversion_factor
-                else:
-                    df_local.loc[:, height_fd+'_'+to]=df_local[height_fd]
-                df_final=pd.concat((df_final,df_local), axis=0)
-                # print(df_final.shape, lc+' '+units)
-    else:
-        if stations is None:
-            df_final=df.copy()
-            df_final.loc[:, height_fd+'_'+to]=df_final[height_fd]*conversion_factor 
-        else:
+    conv_dic={'FEET':{'METER':0.3048,'CM':30.48, 'FEET':1},
+              'CM': {'METER':0.01,'FEET':0.03281,'CM':1},
+              'METER':{'FEET':3.28084,'CM':100,'METER':1}}
+    
+    #Verify the unit field in df has the valid unit label
+    flag = 0
+    if(set(df[unit_fd].unique()).issubset(set(conv_dic.keys()))):
+        flag = 1
+
+    if (origin in conv_dic.keys())and (to in conv_dic.keys())and(flag==1):
+        conversion_factor=conv_dic[origin][to]
+        look_for=origin
+        if check_col:
             df_final=pd.DataFrame()
-            for lc in stations: #TODO: Validate not all the stations in stations can be in df
-                df_local=df.loc[df_local[gauge_fd]==lc].copy()
-                if not df_local.empty:
-                    df_local.loc[:, height_fd+'_'+to]=df_local[height_fd]*conversion_factor 
+            if stations is None:
+                stations=df[gauge_fd].unique()
+
+                for lc in stations:
+
+                    df_local=df.loc[df[gauge_fd]==lc].copy()
+                    units=df_local[unit_fd].iloc[0]
+                    if look_for==units:
+                        df_local.loc[:, height_fd+'_'+to]=df_local[height_fd]*conversion_factor
+                    elif to==units:
+                        df_local.loc[:, height_fd+'_'+to]=df_local[height_fd]
+                    else:
+                        df_local.loc[:, height_fd+'_'+to]=df_local[height_fd]*conv_dic[units][to]
                     df_final=pd.concat((df_final,df_local), axis=0)
-    df_final=df_final.rename(columns={height_fd:'height_rw', height_fd+'_'+to:'height'})
+                    # print(df_final.shape, lc+' '+units)
+            df_final=df_final.rename(columns={height_fd:'height_rw', height_fd+'_'+to:'height'})
     
     return df_final
