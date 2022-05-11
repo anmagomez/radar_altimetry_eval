@@ -516,12 +516,13 @@ def get_date_time_cols(df, date_fd, has_hour=False, has_min=False):
                              np.zeros(df['year'].shape), np.zeros(df['year'].shape))))
     return df
 
-def convert_units(df,height_fd, origin='FEET', to='METER', check_col=True, unit_fd='unit',
+def convert_units(df,height_fd, origin='FEET', to='METER', unit_fd='unit',
                   gauge_fd='gauge_id', stations=None):
 
     '''Convert from an unit origin that can be ft, cm, or m, to a unit destination that can be
         ft, cm, m
        If the original unit is different from origin convert the unit to 'to' units
+       #TODO: Add an exception for the columns, logical control for now
     '''
     conv_dic={'FEET':{'METER':0.3048,'CM':30.48, 'FEET':1},
               'CM': {'METER':0.01,'FEET':0.03281,'CM':1},
@@ -529,13 +530,22 @@ def convert_units(df,height_fd, origin='FEET', to='METER', check_col=True, unit_
     
     #Verify the unit field in df has the valid unit label
     flag = 0
-    if(set(df[unit_fd].unique()).issubset(set(conv_dic.keys()))):
+    flag_nc=0
+    
+    if unit_fd in df.columns:
+        if(set(df[unit_fd].unique()).issubset(set(conv_dic.keys()))):
+            flag = 1
+    else:
+        units=origin
+        flag_nc=1
         flag = 1
-
-    if (origin in conv_dic.keys())and (to in conv_dic.keys())and(flag==1):
-        conversion_factor=conv_dic[origin][to]
-        look_for=origin
-        if check_col:
+        
+    if (height_fd in df.columns) and (gauge_fd in df.columns):
+        
+        if (origin in conv_dic.keys())and (to in conv_dic.keys())and(flag==1):
+            conversion_factor=conv_dic[origin][to]
+            look_for=origin
+            
             df_final=pd.DataFrame()
             if stations is None:
                 stations=df[gauge_fd].unique()
@@ -543,7 +553,9 @@ def convert_units(df,height_fd, origin='FEET', to='METER', check_col=True, unit_
                 for lc in stations:
 
                     df_local=df.loc[df[gauge_fd]==lc].copy()
-                    units=df_local[unit_fd].iloc[0]
+                    if flag_nc==0:
+                        units=df_local[unit_fd].iloc[0]
+
                     if look_for==units:
                         df_local.loc[:, height_fd+'_'+to]=df_local[height_fd]*conversion_factor
                     elif to==units:
@@ -551,7 +563,9 @@ def convert_units(df,height_fd, origin='FEET', to='METER', check_col=True, unit_
                     else:
                         df_local.loc[:, height_fd+'_'+to]=df_local[height_fd]*conv_dic[units][to]
                     df_final=pd.concat((df_final,df_local), axis=0)
-                    # print(df_final.shape, lc+' '+units)
-            df_final=df_final.rename(columns={height_fd:'height_rw', height_fd+'_'+to:'height'})
+                        # print(df_final.shape, lc+' '+units)
+                df_final=df_final.rename(columns={height_fd:'height_rw', height_fd+'_'+to:'height'})
+    else: 
+        df_final=pd.DataFrame() #This is dangerous
     
     return df_final
