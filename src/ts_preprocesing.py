@@ -484,6 +484,7 @@ def get_comp_metrics(ts_obs,ts_est):
         vec2corrcoef[1, :] = datats1_commonts2
         matcorr_ts1ts2 = np.corrcoef(vec2corrcoef)
         corr_ts1ts2 = matcorr_ts1ts2[0, 1]
+
         # Nash-Sutcliffe coefficient
         diffts = (datats2_commonts1 - np.nanmean(datats2_commonts1)) -\
             (datats1_commonts2 - np.nanmean(datats1_commonts2))
@@ -494,12 +495,18 @@ def get_comp_metrics(ts_obs,ts_est):
         rmsd_ts2 = np.linalg.norm(diffts)/np.sqrt(diffts.size)
         # Amplitude of ts1 time series over common date with ts2
         ampl_ts1 = np.max(datats1_commonts2) - np.min(datats1_commonts2)
+        # Mean Error
+        me=np.nanmean(diffts)
+        #variance of error
+        ve=np.nanmean(np.square(diffts - me))
     else:
         corr_ts1ts2 = np.nan
         ns_ts2 = np.nan
         rmsd_ts2 = np.nan
         ampl_ts1 = np.nan
-    return (corr_ts1ts2, ns_ts2, rmsd_ts2, ampl_ts1)
+        me=np.nan
+        ve=np.nan
+    return (corr_ts1ts2, ns_ts2, rmsd_ts2, ampl_ts1, me, ve)
 
 def get_date_time_cols(df, date_fd, has_hour=False, has_min=False):
     ##TODO: Calculate minutes
