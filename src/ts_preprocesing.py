@@ -471,7 +471,18 @@ def moving_window_around_date(df, date, delta, v_fd, d_fd):
     return df_t[v_fd].median(skipna=True),df_t[v_fd].mean(skipna=True),df_t[v_fd].std(skipna=True), df_t[v_fd].count()
 
 def get_comp_metrics(ts_obs,ts_est):
-    
+    ''' Compare altis and insitu data
+        
+        Outputs (In order):
+        corr_ts1ts2: R2
+        ns_ts2: NSC
+        rmsd_ts2: RMSE
+        ampl_ts1: Amplitude of ts1 time series over common date with ts2
+        me: Mean Error (#TODO Pending check)
+        ve: Variance of the error
+        datats2_commonts1.size: Size of the observations
+        datats1_commonts2.size: Size of Altis GDR
+    '''
     icommon = ((np.isnan(ts_est) == 0) &
                (np.isnan(ts_obs) == 0)).nonzero()
     
@@ -506,7 +517,7 @@ def get_comp_metrics(ts_obs,ts_est):
         ampl_ts1 = np.nan
         me=np.nan
         ve=np.nan
-    return (corr_ts1ts2, ns_ts2, rmsd_ts2, ampl_ts1, me, ve)
+    return (corr_ts1ts2, ns_ts2, rmsd_ts2, ampl_ts1, me, ve, datats2_commonts1.size, datats1_commonts2.size)
 
 def get_date_time_cols(df, date_fd, has_hour=False, has_min=False):
     ##TODO: Calculate minutes
