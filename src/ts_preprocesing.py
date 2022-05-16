@@ -587,3 +587,25 @@ def convert_units(df,height_fd, origin='FEET', to='METER', unit_fd='unit',
         df_final=pd.DataFrame() #This is dangerous
     
     return df_final
+
+#Get statistics for each value 
+#Code from https://stackoverflow.com/questions/47637774/pandas-groupby-quantile-values/58535752
+def rename(newname):
+    def decorator(f):
+        f.__name__ = newname
+        return f
+    return decorator
+#Define quatiles at a percentage define by y
+def q_at(y):
+    @rename(f'q{y:0.3f}')
+    def q(x):
+        return x.quantile(y)
+    return q
+#To change names of level col name specially after stats asre calculated with describe 
+def change_statfd_names(df,stats_fd, var_fd, additional_fd):
+    name_vs=[]
+    for vfd in var_fd:
+        name_vs=name_vs+[vfd+'_'+sfd for sfd in stats_fd]
+    new_colnames=additional_fd+name_vs
+    df.columns=new_colnames
+    return df
