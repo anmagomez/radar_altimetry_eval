@@ -7,6 +7,7 @@ import datetime as dt
 import pandas as pd
 import pytz
 import scipy.interpolate as sc
+from icecream import ic
 
   
 '''Functions developed by Sylvain Biancamaria'''
@@ -609,3 +610,64 @@ def change_statfd_names(df,stats_fd, var_fd, additional_fd):
     new_colnames=additional_fd+name_vs
     df.columns=new_colnames
     return df
+
+def filter_extreme_duplicates(df_start, st_id, date_fd,height_fd, cols, cut_off, gauge_list=None):
+    '''Function for LOCSS
+        It summarize the median of values that are duplicates at the same date if the standard deviation of those values is lesss than a cut_off in m
+        Inputs: 
+            st_id: id column name that contains the id for each lake
+            date_fd: date column name
+            height_fd: height column name. Values must be in the same units
+            cols: columns to preserve in the dataframe 
+    '''
+    if gauge_list is None:
+        gauge_list=df_start[st_id].unique()
+    else:
+        gauge_ids=df_start[st_id].unique()
+        gauge_list = set.intersection(set(gauge_ids), set(gauge_list))
+    df_final_np=pd.DataFrame()
+
+    for st in gauge_list:
+        #ic(st)
+        df=df_start.loc[df_start[st_id]==st].copy()
+         
+        df=df.sort_values(by=date_fd)
+        df['diff_val']=df[height_fd].diff()
+        df['diff_date']=df[date_fd].diff().apply(lambda x: x/np.timedelta64(1, 'm')).fillna(0).astype('int64') #Difference in minutes
+        date_duplicate_mask=df[date_fd].duplicated(keep=False)
+    #         #print('Duplicated\n',date_duplicate_mask)
+        #With the duplicates analize how they are
+
+        df_dp=df[date_duplicate_mask].copy()
+
+        if not df_dp.empty:
+            df_stats_dp=df_dp[[st_id, date_fd, height_fd]].groupby([st_id, date_fd]).describe().reset_index()
+            stats_fd=['count','mean','std','min','q_25', 'q_50', 'q_75','max']
+            var_fd='height'
+            additional_fd=[st_id, date_fd]
+            df_stats_dp=change_statfd_names(df_stats_dp,stats_fd, [var_fd], additional_fd)
+
+            # ic(df_stats_dp)
+
+            discard_mask=~(df_stats_dp[var_fd+'_std'].isnull())&(df_stats_dp[var_fd+'_std']>=cut_off)
+            num_discard=df_stats_dp.loc[discard_mask].shape
+
+            #ic(num_discard)
+
+            df_remove_ex_dp=df_stats_dp.loc[discard_mask, [st_id,date_fd, var_fd+'_std']]
+            # ic(df_remove_ex_dp)
+
+            #Remove the extreme duplicates
+
+            if not df_remove_ex_dp.empty:
+                #Remove those with extreme duplicates
+                #ic(df.shape)
+                df=df.loc[~df[date_fd].isin(df_remove_ex_dp[date_fd])]
+                # ic(df.groupby(by=cols, as_index=False).size())
+
+                #average the ones with less driplicates
+                df=df.groupby(by=cols, as_index=False).agg(height_rc=(height_fd,'median'),
+                                                           height_count=(height_fd,'count'))
+                #ic(df.shape)
+                df_final_np=pd.concat((df_final_np, df), axis=0)
+    return df_final_np
