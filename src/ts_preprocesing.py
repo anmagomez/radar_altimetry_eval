@@ -531,7 +531,7 @@ def get_comp_metrics(ts_obs,ts_est):
         s_corr_scipy=np.nan
         s_value_scipy=np.nan
     results={'PR':p_corr_scipy,'PR_p_val':p_value_scipy,'RHO':s_corr_scipy,'RHO_p_val':s_value_scipy,
-         'ns_ts2':ns_ts2,'RMSE_ts2':rmsd_ts2,'ampl_ts1':ampl_ts1,'me':me,'ve':ve,
+         'NSF':ns_ts2,'RMSE_ts2':rmsd_ts2,'ampl_ts1':ampl_ts1,'me':me,'ve':ve,
          'size_obs':datats2_commonts1.size, 'size_est':datats1_commonts2.size}
     return results
 
