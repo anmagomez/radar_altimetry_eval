@@ -7,6 +7,7 @@ import datetime as dt
 import pandas as pd
 import pytz
 import scipy.interpolate as sc
+import scipy.stats
 from icecream import ic
 
   
@@ -475,14 +476,18 @@ def get_comp_metrics(ts_obs,ts_est):
     ''' Compare altis and insitu data
         
         Outputs (In order):
-        corr_ts1ts2: R2
-        ns_ts2: NSC
-        rmsd_ts2: RMSE
-        ampl_ts1: Amplitude of ts1 time series over common date with ts2
-        me: Mean Error (#TODO Pending check)
-        ve: Variance of the error
-        datats2_commonts1.size: Size of the observations
-        datats1_commonts2.size: Size of Altis GDR
+        results: dictionary with the keys
+            PR: pearson correlation
+            PR_p_val: pearson correlation p-value
+            RHO: spearman correlation
+            RHO_p_val: spearman correlation p-value
+            ns_ts2: NSC
+            rmsd_ts2: RMSE
+            ampl_ts1: Amplitude of ts1 time series over common date with ts2
+            me: Mean Error (#TODO Pending check)
+            ve: Variance of the error
+            datats2_commonts1.size: Size of the observations
+            datats1_commonts2.size: Size of Altis GDR
     '''
     icommon = ((np.isnan(ts_est) == 0) &
                (np.isnan(ts_obs) == 0)).nonzero()
@@ -496,7 +501,10 @@ def get_comp_metrics(ts_obs,ts_est):
         vec2corrcoef[1, :] = datats1_commonts2
         matcorr_ts1ts2 = np.corrcoef(vec2corrcoef)
         corr_ts1ts2 = matcorr_ts1ts2[0, 1]
-
+        #Adding other values
+        p_corr_scipy,p_value_scipy = scipy.stats.pearsonr(vec2corrcoef[0, :], vec2corrcoef[1, :])
+        s_corr_scipy,s_value_scipy = scipy.stats.spearmanr(vec2corrcoef[0, :], vec2corrcoef[1, :])
+        ###
         # Nash-Sutcliffe coefficient
         diffts = (datats2_commonts1 - np.nanmean(datats2_commonts1)) -\
             (datats1_commonts2 - np.nanmean(datats1_commonts2))
@@ -518,7 +526,14 @@ def get_comp_metrics(ts_obs,ts_est):
         ampl_ts1 = np.nan
         me=np.nan
         ve=np.nan
-    return (corr_ts1ts2, ns_ts2, rmsd_ts2, ampl_ts1, me, ve, datats2_commonts1.size, datats1_commonts2.size)
+        p_corr_scipy=np.nan
+        p_value_scipy=np.nan
+        s_corr_scipy=np.nan
+        s_value_scipy=np.nan
+    results={'PR':p_corr_scipy,'PR_p_val':p_value_scipy,'RHO':s_corr_scipy,'RHO_p_val':s_value_scipy,
+         'ns_ts2':ns_ts2,'RMSE_ts2':rmsd_ts2,'ampl_ts1':ampl_ts1,'me':me,'ve':ve,
+         'size_obs':datats2_commonts1.size, 'size_est':datats1_commonts2.size}
+    return results
 
 def get_date_time_cols(df, date_fd, has_hour=False, has_min=False):
     ##TODO: Calculate minutes
