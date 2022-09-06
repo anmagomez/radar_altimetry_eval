@@ -4,6 +4,7 @@ import time as tm
 import numpy as np
 from pylab import plt
 import scipy.interpolate as sc
+import scipy.stats
 from datetime import datetime as dt
 
 
@@ -199,6 +200,7 @@ def interp_ts12ts2_stat(dy_ts1, data_ts1, dy_ts2, data_ts2):
         vec2corrcoef[0, :] = datats2_commonts1
         vec2corrcoef[1, :] = datats1_commonts2
         matcorr_ts1ts2 = np.corrcoef(vec2corrcoef)
+
         corr_ts1ts2 = matcorr_ts1ts2[0, 1]
         # Nash-Sutcliffe coefficient
         diffts = (datats2_commonts1 - np.nanmean(datats2_commonts1)) -\
@@ -215,6 +217,7 @@ def interp_ts12ts2_stat(dy_ts1, data_ts1, dy_ts2, data_ts2):
         ns_ts2 = np.nan
         rmsd_ts2 = np.nan
         ampl_ts1 = np.nan
+
     return (datast1_2_ts2dy, corr_ts1ts2, ns_ts2, rmsd_ts2, ampl_ts1)
 
 
