@@ -470,7 +470,7 @@ def moving_window_around_date(df, date, delta, v_fd, d_fd):
            
     '''
     df_t=df.loc[(df[d_fd]>=(date-dt.timedelta(days=delta)))&(df[d_fd]<=(date+dt.timedelta(days=delta)))]
-    return df_t[v_fd].median(skipna=True, numeric_only=True),df_t[v_fd].mean(skipna=True, numeric_only=True),df_t[v_fd].std(skipna=True, numeric_only=True), df_t[v_fd].count()
+    return df_t[v_fd].median(skipna=True),df_t[v_fd].mean(skipna=True),df_t[v_fd].std(skipna=True), df_t[v_fd].count()
 
 def closer_value_around_date(df, date, delta, v_fd, d_fd):
     '''Moving window of a value around a date (targeting date) +- n days defined by delta
@@ -504,10 +504,10 @@ def closer_value_around_date(df, date, delta, v_fd, d_fd):
         mean=np.nan
         std=np.nan
     else:
-        value =df_closer.median(skipna=True, numeric_only=True)
+        value =df_closer[v_fd].median(skipna=True)
         criteria='median'
-        mean=df_closer.mean(skipna=True, numeric_only=True)
-        std=df_closer.std(skipna=True, numeric_only=True)
+        mean=df_closer[v_fd].mean(skipna=True)
+        std=df_closer[v_fd].std(skipna=True)
         
     # dict_output={'val_cd_d_'+str(delta)+:value,
     #              'type_cd_d_'+str(delta):criteria,
