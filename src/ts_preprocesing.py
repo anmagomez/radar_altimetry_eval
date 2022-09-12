@@ -469,7 +469,7 @@ def moving_window_around_date(df, date, delta, v_fd, d_fd):
            number of not null values used for the mean and the median
            
     '''
-    df_t=df.loc[(df[d_fd]>=(date-dt.timedelta(days=delta)))&(df[d_fd]<=(date+dt.timedelta(days=delta)))]
+    df_t=df.loc[(df[d_fd]>=(date-dt.timedelta(days=delta)))&(df[d_fd]<=(date+dt.timedelta(days=delta)))].copy()
     return df_t[v_fd].median(skipna=True),df_t[v_fd].mean(skipna=True),df_t[v_fd].std(skipna=True), df_t[v_fd].count()
 
 def closer_value_around_date(df, date, delta, v_fd, d_fd):
