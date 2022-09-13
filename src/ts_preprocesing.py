@@ -470,7 +470,13 @@ def moving_window_around_date(df, date, delta, v_fd, d_fd):
            
     '''
     df_t=df.loc[(df[d_fd]>=(date-dt.timedelta(days=delta)))&(df[d_fd]<=(date+dt.timedelta(days=delta)))].copy()
-    return df_t[v_fd].median(skipna=True),df_t[v_fd].mean(skipna=True),df_t[v_fd].std(skipna=True), df_t[v_fd].count()
+    if df_t.shape[0]>=1:
+        median=df_t[v_fd].median(skipna=True)
+        mad=np.median(abs(df_t[v_fd]-median))
+    else:
+        median=np.nan
+        mad=np.nan
+    return df_t[v_fd].median(skipna=True),mad, df_t[v_fd].mean(skipna=True),df_t[v_fd].std(skipna=True), df_t[v_fd].count()
 
 def closer_value_around_date(df, date, delta, v_fd, d_fd):
     '''Moving window of a value around a date (targeting date) +- n days defined by delta
@@ -498,16 +504,19 @@ def closer_value_around_date(df, date, delta, v_fd, d_fd):
         criteria='closer'
         mean=np.nan
         std=np.nan
+        mad=np.nan
     elif df_closer.shape[0]==0:
         value=np.nan
         criteria=np.nan
         mean=np.nan
         std=np.nan
+        mad=np.nan
     else:
         value =df_closer[v_fd].median(skipna=True)
         criteria='median'
         mean=df_closer[v_fd].mean(skipna=True)
         std=df_closer[v_fd].std(skipna=True)
+        mad=np.median(abs(df_closer[v_fd]-value))
         
     # dict_output={'val_cd_d_'+str(delta)+:value,
     #              'type_cd_d_'+str(delta):criteria,
@@ -523,9 +532,9 @@ def closer_value_around_date(df, date, delta, v_fd, d_fd):
     n_cd = df_closer[v_fd].count()
     mea_cd=mean
     std_cd=std
-    
+    mad_cd=mad
     # val_cd,type_cd,ndays_cd,mea_cd, std_cd,n_cd
-    return val_cd,type_cd,ndays_cd,mea_cd, std_cd,n_cd
+    return val_cd,type_cd,ndays_cd,mea_cd, mad_cd, std_cd,n_cd
 
 def get_comp_metrics(ts_obs,ts_est):
     ''' Compare altis and insitu data
