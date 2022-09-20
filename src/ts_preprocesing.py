@@ -698,6 +698,8 @@ def filter_extreme_duplicates(df_start, st_id, date_fd,height_fd, cols, cut_off,
             date_fd: date column name
             height_fd: height column name. Values must be in the same units
             cols: columns to preserve in the dataframe 
+        Outputs:
+            datafame without the duplicates that fill out the description 
     '''
     if gauge_list is None:
         gauge_list=df_start[st_id].unique()
@@ -744,9 +746,72 @@ def filter_extreme_duplicates(df_start, st_id, date_fd,height_fd, cols, cut_off,
                 df=df.loc[~df[date_fd].isin(df_remove_ex_dp[date_fd])]
                 # ic(df.groupby(by=cols, as_index=False).size())
 
-                #average the ones with less driplicates
+                #average the ones with less duplicates
                 df=df.groupby(by=cols, as_index=False).agg(height_rc=(height_fd,'median'),
                                                            height_count=(height_fd,'count'))
                 #ic(df.shape)
                 df_final_np=pd.concat((df_final_np, df), axis=0)
     return df_final_np
+
+def extract_data_gauge(df, st_id_fd, st_id, date_fd, height_fd, low_lim, high_lim):
+    ''' Extract the rows for a particular station in the dataframe which water elevation change exceed certain threshold 
+        between low_lim and high_lim range.
+        Inputs:
+          df: dataframe with all the values, the station and the height
+          st_id_fd: name of the column containing the station id
+          st_id: station id in which values would de extracted
+          date_fd: name of the column containing the date
+          height_fd: name of the column containing the height
+          low_lim: lower limit value 
+          high_lim: higher limit value
+        Output: 
+          Three dataframes, two of them with two additional columns.
+          diff column, which contains the difference between two consecutive heights, and 
+          diff_time, difference among dates in fraction of a day
+          first dataframe: dataframe with all the data from the station st_id
+          second dataframe: dataframe with all the stations except st_id
+          third dataframe: rows to remove which diff values are between the low_lim and high_lim
+          
+          
+    '''
+    df_ground_ex=df.loc[df[st_id_fd]==st_id].copy()
+    df_ground_re=df.loc[~(df[st_id_fd]==st_id)].copy()
+    df_ground_ex=df_ground_ex.sort_values(by=[date_fd])
+    df_ground_ex['diff']=df_ground_ex[height_fd].diff()
+    df_ground_ex['diff_time']=df_ground_ex[date_fd].diff()#.apply(lambda x: x/np.timedelta64(1, 'D')).fillna(0).astype('int64')
+    # df_ground_ex['diff'].max()
+    df_diff_to_remove=df_ground_ex.loc[((df_ground_ex['diff']>=high_lim)|(df_ground_ex['diff']<=low_lim))]
+    return (df_ground_ex, df_ground_re, df_diff_to_remove)
+    #df with only the station st_id, df without station st_id, df with df to remove
+
+
+
+def remove_extreme_data(df,df_diff_to_remove, date_fd, height_fd, diff_fd):
+    ''' #TO-DO: Do the iteration of this function backwards
+        Move a segment of a time series to the start point of another segment 
+        #TO-DO: Pending to explain this better
+    '''
+    df=df.copy()
+    row_iterator = df_diff_to_remove.iterrows()
+    _, this = next(row_iterator)  # take first item from row_iterator
+    for index,next_to in row_iterator:
+        current_date=this[date_fd]
+        next_date=next_to[date_fd]
+        diff_replace=df.loc[df[date_fd]==current_date,diff_fd]
+        mask=(df[date_fd]>=current_date)&(df[date_fd]<next_date)
+        hg=df.loc[mask,height_fd]
+        df.loc[mask,height_fd]=hg-np.round(diff_replace.iloc[0],decimals=2)
+        df[diff_fd]=df[height_fd].diff()
+        new_diff=np.round(df.loc[df[date_fd]==next_date,diff_fd],decimals=2)
+        next_to[diff_fd]=new_diff
+        this=next_to
+
+    current_date=next_to[date_fd]
+    next_date=df[date_fd].max()
+    diff_replace=df.loc[df[date_fd]==current_date,diff_fd]
+    # print(diff_replace.values)
+    mask=(df[date_fd]>=current_date)&(df[date_fd]<=next_date)
+    hg=df.loc[mask,height_fd]
+    df.loc[mask,height_fd]=hg-np.round(diff_replace.iloc[0],decimals=2)
+    df[diff_fd]=df[height_fd].diff()
+    return df
