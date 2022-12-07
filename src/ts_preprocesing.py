@@ -8,7 +8,7 @@ import pandas as pd
 import pytz
 import scipy.interpolate as sc
 import scipy.stats
-from icecream import ic
+# from icecream import ic
 
   
 '''Functions developed by Sylvain Biancamaria'''
