@@ -2,6 +2,8 @@
 
 import matplotlib.dates as mdates
 from matplotlib.ticker import StrMethodFormatter
+import matplotlib.pyplot as plt
+import numpy as np
 #Plots
 #Plot deviation of the mean from satellite, groound observations and interpolated points
 def plot_dev_mean(nfig,dfs, dfg, dfi, source, st_id, altis_name, date_fd, height_fd, labels, labelg, labeli, error_m_text=None, output_f=None):
@@ -42,7 +44,7 @@ def plot_dev_mean(nfig,dfs, dfg, dfi, source, st_id, altis_name, date_fd, height
 
 #Plots
 #Plot deviation of the mean from satellite, groound observations and interpolated points
-def plot_dev_mean_publish(nfig,dfs, dfg, source, st_id, altis_name, date_fd, height_fd, labels, labelg, fill_between=None, error_m_text=None, output_f=None):
+def plot_dev_mean_publish(fig,nfig,dfs, dfg, source, st_id, altis_name, date_fd, height_fd, labels, labelg, fill_between=None, error_m_text=None, output_f=None):
     #plt.figure(nfig, figsize=(20, 6))
     
     if 'Sentinel-3A' in altis_name:
@@ -81,8 +83,7 @@ def plot_dev_mean_publish(nfig,dfs, dfg, source, st_id, altis_name, date_fd, hei
             plt.plot(dfg[date_fd].to_numpy()[:i], (dfg[height_fd]-dfg[height_fd].mean()).to_numpy()[:i], linestyle='solid',
                     markerfacecolor='#7570b3',markeredgecolor='#7570b3',color='#7570b3',marker='o', markersize=3)#, label=labelg)
         else:
-            plt.plot(dfg[date_fd].to_numpy()[indices[n - 1]:i], (dfg[height_fd]-dfg[height_fd].mean()).to_numpy()[indices[n - 1]:i], linestyle='solid',
-                    markerfacecolor='#7570b3',markeredgecolor='#7570b3',color='#7570b3',marker='o', markersize=3) #, label=labelg)
+            plt.plot(dfg[date_fd].to_numpy()[indices[n - 1]:i], (dfg[height_fd]-dfg[height_fd].mean()).to_numpy()[indices[n - 1]:i], linestyle='solid', markerfacecolor='#7570b3',markeredgecolor='#7570b3',color='#7570b3',marker='o', markersize=3) #, label=labelg)
 
     #Plot the last part of the series. If not gaps it plots the complete series
     if len(indices)==0:
