@@ -536,6 +536,9 @@ def closer_value_around_date(df, date, delta, v_fd, d_fd):
     # val_cd,type_cd,ndays_cd,mea_cd, std_cd,n_cd
     return val_cd,type_cd,ndays_cd,mea_cd, mad_cd, std_cd,n_cd
 
+# Pending add interpolation 
+
+#https://stackoverflow.com/questions/32237862/find-the-closest-date-to-a-given-date
 def get_comp_metrics(ts_obs,ts_est):
     ''' Compare altis and insitu data
         
@@ -563,28 +566,31 @@ def get_comp_metrics(ts_obs,ts_est):
         datats1_commonts2 = ts_est[icommon]
         # Correlation coefficient
         vec2corrcoef = np.zeros((2, datats2_commonts1.size))
-        vec2corrcoef[0, :] = datats2_commonts1
-        vec2corrcoef[1, :] = datats1_commonts2
+        vec2corrcoef[0, :] = datats2_commonts1 - np.nanmean(datats2_commonts1)
+        vec2corrcoef[1, :] = datats1_commonts2 - np.nanmean(datats1_commonts2)
         matcorr_ts1ts2 = np.corrcoef(vec2corrcoef)
         corr_ts1ts2 = matcorr_ts1ts2[0, 1]
         #Adding other values
         p_corr_scipy,p_value_scipy = scipy.stats.pearsonr(vec2corrcoef[0, :], vec2corrcoef[1, :])
         s_corr_scipy,s_value_scipy = scipy.stats.spearmanr(vec2corrcoef[0, :], vec2corrcoef[1, :])
+        #error at each time
+        ei=vec2corrcoef[0, :]-vec2corrcoef[1, :]
         ###
         # Nash-Sutcliffe coefficient
-        diffts = (datats2_commonts1 - np.nanmean(datats2_commonts1)) -\
-            (datats1_commonts2 - np.nanmean(datats1_commonts2))
+        # diffts = (datats2_commonts1 - np.nanmean(datats2_commonts1)) - (datats1_commonts2 - np.nanmean(datats1_commonts2))
+        diffts = (vec2corrcoef[0, :] - np.nanmean(vec2corrcoef[0, :])) - (vec2corrcoef[1, :] - np.nanmean(vec2corrcoef[1, :]))
         ns_ts2 = 1 - np.sum(np.square(diffts)) / \
-            np.sum(np.square(datats1_commonts2 -
-                             np.nanmean(datats1_commonts2)))
+            np.sum(np.square(vec2corrcoef[0, :] -
+                             np.nanmean(vec2corrcoef[1, :])))
         # RMS from ts2 wrt ts1
-        rmsd_ts2 = np.linalg.norm(diffts)/np.sqrt(diffts.size)
+        # rmsd_ts2 = np.linalg.norm(diffts)/np.sqrt(diffts.size)
+        rmsd_ts2 = np.sqrt(np.nanmean(np.square(ei)))
         # Amplitude of ts1 time series over common date with ts2
         ampl_ts1 = np.max(datats1_commonts2) - np.min(datats1_commonts2)
         # Mean Error
-        me=np.nanmean(diffts)
+        me=np.nanmean((datats2_commonts1-datats1_commonts2))
         #variance of error
-        ve=np.nanmean(np.square(diffts - me))
+        ve=np.nanmean(np.square(ei - me))
     else:
         corr_ts1ts2 = np.nan
         ns_ts2 = np.nan
@@ -596,6 +602,7 @@ def get_comp_metrics(ts_obs,ts_est):
         p_value_scipy=np.nan
         s_corr_scipy=np.nan
         s_value_scipy=np.nan
+    print ('new me', me) 
     results={'PR':p_corr_scipy,'PR_p_val':p_value_scipy,'RHO':s_corr_scipy,'RHO_p_val':s_value_scipy,
          'NSF':ns_ts2,'RMSE_ts2':rmsd_ts2,'ampl_ts1':ampl_ts1,'me':me,'ve':ve,
          'size_obs':datats2_commonts1.size, 'size_est':datats1_commonts2.size, 
