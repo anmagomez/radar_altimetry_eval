@@ -255,7 +255,7 @@ def comp_multiple_altis_insi():
         comp_insi_alti(finsi, insiname, falti, altivsname, ncoldate, ncolh,
                        ncolgeoid, outdir, fstat)
 
-def load_altis(falti, ncoldate, ncolh, ncolgeoid=None, nodataalti=-9999, wse_ref='g'):
+def load_altis(falti, ncoldate, ncolh, ncolobs,ncolgeoid=None, nodataalti=-9999, wse_ref='g'):
     ##TODO: Pending to raise exceptions in errors
     '''
     Function to load altimetry water elevation in AlTiS csv format
@@ -263,6 +263,7 @@ def load_altis(falti, ncoldate, ncolh, ncolgeoid=None, nodataalti=-9999, wse_ref
     - falti: AlTiS csv file
     - ncoldate: name of the column with date of each sample time series
     - ncolh: name of the column with water elevation time series
+    - ncolobs: name of the column with the number of samples 
     - nodataalti: no data values in the water elevation time series
     - ncolgeoid: name of the column with geoid elevation time series. Default is None
     - wse_ref: type of water surface elevation to extract. 
@@ -278,6 +279,7 @@ def load_altis(falti, ncoldate, ncolh, ncolgeoid=None, nodataalti=-9999, wse_ref
     - alti_height: water elevation of all samples in the time series
                    referenced to the mission reference geoid (and not the
                    ellipsoid)
+    - alti_obsample: samples for each median data observation from altimeter
     '''
     # Retrieve in-situ water level file header
     fin = open(falti)
@@ -333,6 +335,22 @@ def load_altis(falti, ncoldate, ncolh, ncolgeoid=None, nodataalti=-9999, wse_ref
     elif len(icold) == 1:
         alti_date = np.loadtxt(falti, skiprows=1, delimiter=',',
                                usecols=[icold[0]], dtype='U')
+        
+    # Extract number of samples
+    patterncol = ncolobs
+    icolo = [i for i, s in enumerate(isheader_split)
+             if patterncol.lower() in s.lower()]
+    if len(icolo) == 0:
+        print(('Error: no column '+ncolobs+' in '+falti))
+        alti_obsample = None
+    elif len(icolo) > 1:
+        print(('Error: more than one column '+ncolobs+' in '+falti))
+        alti_obsample = None
+    elif len(icolo) == 1:
+        alti_obsample = np.loadtxt(falti, skiprows=1, delimiter=',',
+                                 usecols=[icolo[0]])
+    
+    
     if alti_date is None:
         alti_year = None
         alti_month = None
@@ -354,13 +372,14 @@ def load_altis(falti, ncoldate, ncolh, ncolgeoid=None, nodataalti=-9999, wse_ref
     return (alti_year[ivaliddata], alti_month[ivaliddata],
             alti_day[ivaliddata], alti_hour[ivaliddata],
             alti_minute[ivaliddata],
-            alti_wse[ivaliddata])
+            alti_wse[ivaliddata], 
+            alti_obsample[ivaliddata])
 
 
 
 #####Other functions
 
-def open_match_station_altis(g_path,altis_name, st_fd, df_gts, st_id,altis_date_fd, altis_height_fd, nodataalti=-9999, ncolgeoid=None,wse_ref='g'):
+def open_match_station_altis(g_path,altis_name, st_fd, df_gts, st_id,altis_date_fd, altis_height_fd, n_obs_altis,nodataalti=-9999, ncolgeoid=None,wse_ref='g'):
     '''Match data from altimeter with data from the station
     Inputs:
         g_path: Altis observation directory
@@ -380,15 +399,15 @@ def open_match_station_altis(g_path,altis_name, st_fd, df_gts, st_id,altis_date_
         2) ground observations for the station st_id
     '''
     #Read altis
-    (altiyear, altimonth, altiday, altihour, altiminute, altiwelev)=load_altis(g_path+altis_name+'.csv', 
-                                                                               altis_date_fd, altis_height_fd, 
+    (altiyear, altimonth, altiday, altihour, altiminute, altiwelev, altiobs)=load_altis(g_path+altis_name+'.csv', 
+                                                                               altis_date_fd, altis_height_fd, n_obs_altis,
                                                                                nodataalti=-9999, ncolgeoid=ncolgeoid, wse_ref=wse_ref)
     # Compute decimal year from year/month/day from altimetry time series
     altidy = np.array(list(map(yearmonthdayhourminutesec2decimalyear,
                            altiyear, altimonth, altiday, altihour,
                            altiminute, np.zeros(altiday.shape))))
     
-    dic_altis={'decimal_y':altidy,'height':altiwelev,'year':altiyear, 'month':altimonth, 'day':altiday, 'hour':altihour}
+    dic_altis={'decimal_y':altidy,'height':altiwelev,'nobs_altis':altiobs,'year':altiyear, 'month':altimonth, 'day':altiday, 'hour':altihour}
     
     df_altis=pd.DataFrame(dic_altis)
     
