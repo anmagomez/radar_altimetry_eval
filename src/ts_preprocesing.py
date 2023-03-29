@@ -606,8 +606,10 @@ def get_comp_metrics(ts_obs,ts_est):
         rmsd_ts2 = np.sqrt(np.nanmean(np.square(ei)))
         # Amplitude of ts1 time series over common date with ts2
         ampl_ts1 = np.max(datats1_commonts2) - np.min(datats1_commonts2)
-        # Mean Error
+        # Mean Error non bias removed
         me=np.nanmean((datats2_commonts1-datats1_commonts2))
+        # Mean error bias removed
+        me_br=np.nanmean((vec2corrcoef[0, :]-vec2corrcoef[1, :]))
         #variance of error
         ve=np.nanmean(np.square(ei - me))
     else:
@@ -621,9 +623,10 @@ def get_comp_metrics(ts_obs,ts_est):
         p_value_scipy=np.nan
         s_corr_scipy=np.nan
         s_value_scipy=np.nan
-    print ('new me', me) 
+    print ('non bias corrected', me) 
+    print ('non bias removed', me_br) 
     results={'PR':p_corr_scipy,'PR_p_val':p_value_scipy,'RHO':s_corr_scipy,'RHO_p_val':s_value_scipy,
-         'NSF':ns_ts2,'RMSE_ts2':rmsd_ts2,'ampl_ts1':ampl_ts1,'me':me,'ve':ve,
+         'NSF':ns_ts2,'RMSE_ts2':rmsd_ts2,'ampl_ts1':ampl_ts1,'me':me,'me_bias_corr':me_br,'ve':ve,
          'size_obs':datats2_commonts1.size, 'size_est':datats1_commonts2.size, 
          'obs':datats2_commonts1, 'GDR':datats1_commonts2}
     return results
