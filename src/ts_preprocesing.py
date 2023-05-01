@@ -732,6 +732,7 @@ def filter_extreme_duplicates(df_start, st_id, date_fd,height_fd, cols, cut_off,
             cols: columns to preserve in the dataframe 
         Outputs:
             datafame without the duplicates that fill out the description 
+            The amount of data discarded
     '''
     if gauge_list is None:
         gauge_list=df_start[st_id].unique()
@@ -739,7 +740,7 @@ def filter_extreme_duplicates(df_start, st_id, date_fd,height_fd, cols, cut_off,
         gauge_ids=df_start[st_id].unique()
         gauge_list = set.intersection(set(gauge_ids), set(gauge_list))
     df_final_np=pd.DataFrame()
-
+    total_discarded=0
     for st in gauge_list:
         #ic(st)
         df=df_start.loc[df_start[st_id]==st].copy()
@@ -763,7 +764,7 @@ def filter_extreme_duplicates(df_start, st_id, date_fd,height_fd, cols, cut_off,
             # ic(df_stats_dp)
 
             discard_mask=~(df_stats_dp[var_fd+'_std'].isnull())&(df_stats_dp[var_fd+'_std']>=cut_off)
-            num_discard=df_stats_dp.loc[discard_mask].shape
+            total_discarded=total_discarded+df_stats_dp.loc[discard_mask].shape[0]
 
             #ic(num_discard)
 
@@ -783,7 +784,7 @@ def filter_extreme_duplicates(df_start, st_id, date_fd,height_fd, cols, cut_off,
                                                            height_count=(height_fd,'count'))
                 #ic(df.shape)
                 df_final_np=pd.concat((df_final_np, df), axis=0)
-    return df_final_np
+    return df_final_np, total_discarded
 
 def extract_data_gauge(df, st_id_fd, st_id, date_fd, height_fd, low_lim, high_lim):
     ''' Extract the rows for a particular station in the dataframe which water elevation change exceed certain threshold 
