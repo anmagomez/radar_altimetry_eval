@@ -766,11 +766,8 @@ def filter_extreme_duplicates(df_start, st_id, date_fd,height_fd, cols, cut_off,
             date_duplicate_mask=df[date_fd].duplicated(keep=False) #inquire weather the dates are duplicated mark all duplicates at true
             df_dp=df[date_duplicate_mask].copy()
 
-
-        
-  
-        
         if not df_dp.empty:
+            # print(st)
             df_stats_dp=df_dp[cols+[height_fd]].groupby(cols).describe().reset_index()
             stats_fd=['count','mean','std','min','q_25', 'q_50', 'q_75','max']
             var_fd='height'
@@ -780,7 +777,8 @@ def filter_extreme_duplicates(df_start, st_id, date_fd,height_fd, cols, cut_off,
             
             discard_mask=~(df_stats_dp[var_fd+'_std'].isnull())&(df_stats_dp[var_fd+'_std']>=cut_off)
             total_discarded=total_discarded+df_stats_dp.loc[discard_mask].shape[0]
-
+            
+            # print('Total discarded'+str(total_discarded), df_stats_dp.loc[discard_mask])
             #ic(num_discard)
             #Those that do not satisfy the cutoff 
             df_remove_ex_dp=df_stats_dp.loc[discard_mask].copy()
@@ -793,17 +791,17 @@ def filter_extreme_duplicates(df_start, st_id, date_fd,height_fd, cols, cut_off,
             if not df_remove_ex_dp.empty:
                 #Remove those with extreme duplicates
                 #ic(df.shape)
-                print(st)
+                # print(st)
                 df=df.loc[~df[date_fd].isin(df_remove_ex_dp[date_fd])]
-                df_removed=df.loc[df[date_fd].isin(df_remove_ex_dp[date_fd])]
+                df_final_removed=pd.concat((df_final_removed, df_remove_ex_dp), axis=0)
                 # ic(df.groupby(by=cols, as_index=False).size())
 
-                #average the ones with less duplicates
-                df=df.groupby(by=cols, as_index=False).agg(height_rc=(height_fd,'median'),
+            #for all the duplicates extract the median values. Those that are not duplicates the median is the same value original value
+            df=df.groupby(by=cols, as_index=False).agg(height_rc=(height_fd,'median'),
                                                            height_count=(height_fd,'count'))
                 #ic(df.shape)
-                df_final_np=pd.concat((df_final_np, df), axis=0)
-                df_final_removed=pd.concat((df_final_removed, df_remove_ex_dp), axis=0)
+            df_final_np=pd.concat((df_final_np, df), axis=0)
+                
                 
     return df_final_np, df_final_removed, total_discarded
 
