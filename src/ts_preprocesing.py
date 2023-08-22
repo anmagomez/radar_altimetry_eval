@@ -722,16 +722,21 @@ def change_statfd_names(df,stats_fd, var_fd, additional_fd):
     df.columns=new_colnames
     return df
 
-def filter_extreme_duplicates(df_start, st_id, date_fd,height_fd, cols, cut_off, gauge_list=None):
+def filter_extreme_duplicates(df_start, st_id, date_fd,height_fd, cols, cut_off, gauge_list=None, exact_date=False):
     '''Function for LOCSS
-        It summarize the median of values that are duplicates at the same date if the standard deviation of those values is lesss than a cut_off in m
+        It summarizes the median of values that are duplicates at the same date if the standard deviation of those values is lesss than a cut_off in m.
+        By default the same date is considered a time difference of 1 min
         Inputs: 
-            st_id: id column name that contains the id for each lake
+            st_id: id column name that contains the id for gauge_id
             date_fd: date column name
             height_fd: height column name. Values must be in the same units
             cols: columns to preserve in the dataframe 
+            cut_off: cut off used to extract the data. 
+            gauge_list: (optional) list of gauges/stations to apply the filtering. Default: None. This does the filtering at each station in the st_id column
+            exact_date: (optional) If False, the time difference is considered 1 min, if True, the exact date is used
         Outputs:
-            datafame without the duplicates that fill out the description 
+            datafame without the duplicates that fill out the description. The count column allows to know if the median was calculated
+            dataframe with the data removed because if did not comply the cut_off
             The amount of data discarded
     '''
     if gauge_list is None:
@@ -739,44 +744,58 @@ def filter_extreme_duplicates(df_start, st_id, date_fd,height_fd, cols, cut_off,
     else:
         gauge_ids=df_start[st_id].unique()
         gauge_list = set.intersection(set(gauge_ids), set(gauge_list))
+    
     df_final_np=pd.DataFrame()
+    df_final_removed=pd.DataFrame()
     total_discarded=0
+    
+    
     for st in gauge_list:
-        #ic(st)
+        
         df=df_start.loc[df_start[st_id]==st].copy()
          
         df=df.sort_values(by=date_fd)
         df['diff_val']=df[height_fd].diff()
+        
+        # Default 1 min difference 
+        
         df['diff_date']=df[date_fd].diff().apply(lambda x: x/np.timedelta64(1, 'm')).fillna(0).astype('int64') #Difference in minutes
-        date_duplicate_mask=df[date_fd].duplicated(keep=False)
-    #         #print('Duplicated\n',date_duplicate_mask)
-        #With the duplicates analize how they are
+        df_dp=pd.concat([df.loc[(df['diff_date']<1).shift(-1).fillna(True)],df.loc[(df['diff_date']<1)&(~df['diff_val'].isnull())]]).sort_values(by=date_fd).copy()
+        
+        if exact_date:
+            date_duplicate_mask=df[date_fd].duplicated(keep=False) #inquire weather the dates are duplicated mark all duplicates at true
+            df_dp=df[date_duplicate_mask].copy()
 
-        df_dp=df[date_duplicate_mask].copy()
 
+        
+  
+        
         if not df_dp.empty:
-            df_stats_dp=df_dp[[st_id, date_fd, height_fd]].groupby([st_id, date_fd]).describe().reset_index()
+            df_stats_dp=df_dp[cols+[height_fd]].groupby(cols).describe().reset_index()
             stats_fd=['count','mean','std','min','q_25', 'q_50', 'q_75','max']
             var_fd='height'
-            additional_fd=[st_id, date_fd]
+            additional_fd=cols
             df_stats_dp=change_statfd_names(df_stats_dp,stats_fd, [var_fd], additional_fd)
 
-            # ic(df_stats_dp)
-
+            
             discard_mask=~(df_stats_dp[var_fd+'_std'].isnull())&(df_stats_dp[var_fd+'_std']>=cut_off)
             total_discarded=total_discarded+df_stats_dp.loc[discard_mask].shape[0]
 
             #ic(num_discard)
-
-            df_remove_ex_dp=df_stats_dp.loc[discard_mask, [st_id,date_fd, var_fd+'_std']]
+            #Those that do not satisfy the cutoff 
+            df_remove_ex_dp=df_stats_dp.loc[discard_mask].copy()
             # ic(df_remove_ex_dp)
-
+            
+            
+            
             #Remove the extreme duplicates
 
             if not df_remove_ex_dp.empty:
                 #Remove those with extreme duplicates
                 #ic(df.shape)
+                print(st)
                 df=df.loc[~df[date_fd].isin(df_remove_ex_dp[date_fd])]
+                df_removed=df.loc[df[date_fd].isin(df_remove_ex_dp[date_fd])]
                 # ic(df.groupby(by=cols, as_index=False).size())
 
                 #average the ones with less duplicates
@@ -784,7 +803,9 @@ def filter_extreme_duplicates(df_start, st_id, date_fd,height_fd, cols, cut_off,
                                                            height_count=(height_fd,'count'))
                 #ic(df.shape)
                 df_final_np=pd.concat((df_final_np, df), axis=0)
-    return df_final_np, total_discarded
+                df_final_removed=pd.concat((df_final_removed, df_remove_ex_dp), axis=0)
+                
+    return df_final_np, df_final_removed, total_discarded
 
 def extract_data_gauge(df, st_id_fd, st_id, date_fd, height_fd, low_lim, high_lim):
     ''' Extract the rows for a particular station in the dataframe which water elevation change exceed certain threshold 
