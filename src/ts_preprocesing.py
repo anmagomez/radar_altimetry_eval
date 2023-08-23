@@ -748,7 +748,7 @@ def filter_extreme_duplicates(df_start, st_id, date_fd,height_fd, cols, cut_off,
     df_final_np=pd.DataFrame()
     df_final_removed=pd.DataFrame()
     total_discarded=0
-    
+    total_duplicated=0
     
     for st in gauge_list:
         
@@ -800,10 +800,13 @@ def filter_extreme_duplicates(df_start, st_id, date_fd,height_fd, cols, cut_off,
             df=df.groupby(by=cols, as_index=False).agg(height_rc=(height_fd,'median'),
                                                            height_count=(height_fd,'count'))
                 #ic(df.shape)
+            df_duplicates=df.loc[df['height_count']>=2]
+            n_duplicates=df_duplicates['height_count'].sum()-df_duplicates.shape[0]
+            total_duplicated=total_duplicated+n_duplicates
             df_final_np=pd.concat((df_final_np, df), axis=0)
                 
                 
-    return df_final_np, df_final_removed, total_discarded
+    return df_final_np, df_final_removed, total_discarded, total_duplicated
 
 def extract_data_gauge(df, st_id_fd, st_id, date_fd, height_fd, low_lim, high_lim):
     ''' Extract the rows for a particular station in the dataframe which water elevation change exceed certain threshold 
