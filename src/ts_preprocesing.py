@@ -798,8 +798,10 @@ def filter_extreme_duplicates(df_start, st_id, date_fd,height_fd, cols, cut_off,
 
             #for all the duplicates extract the median values. Those that are not duplicates the median is the same value original value
             df=df.groupby(by=cols, as_index=False).agg(height_rc=(height_fd,'median'),
-                                                           height_count=(height_fd,'count'))
+                                                       height_std=(height_fd,'std'),
+                                                       height_count=(height_fd,'count'))
                 #ic(df.shape)
+            
             df_duplicates=df.loc[df['height_count']>=2]
             n_duplicates=df_duplicates['height_count'].sum()-df_duplicates.shape[0]
             total_duplicated=total_duplicated+n_duplicates
