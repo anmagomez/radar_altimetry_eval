@@ -497,13 +497,15 @@ def moving_window_around_date(df, date, delta, v_fd, d_fd):
         mad=np.nan
     return df_t[v_fd].median(skipna=True),mad, df_t[v_fd].mean(skipna=True),df_t[v_fd].std(skipna=True), df_t[v_fd].count()
 
-def closer_value_around_date(df, date, delta, v_fd, d_fd):
+def closer_value_around_date(df, date, delta, v_fd, d_fd, method='median'):
     '''Moving window of a value around a date (targeting date) +- n days defined by delta
         Inputs:
             df: Dataframe containing the dates and values
             date: date around the one the closer value will be estimated
             v_fd: name of the value column in df
             d_fd: name of the date column in df
+            method: method implemented when more than one value is closer to the date. Default median. Options: 'linear' for linear interpolation
+                    scipy.interpolate.griddata is used to do the linear interpolation
         Output:
             val_cd: value obtained from the analysis 
             type_cd: 'closed', if only one date was the closest, 'median': if more than two dates where equally closed
@@ -531,11 +533,36 @@ def closer_value_around_date(df, date, delta, v_fd, d_fd):
         std=np.nan
         mad=np.nan
     else:
-        value =df_closer[v_fd].median(skipna=True)
-        criteria='median'
+        # df_closer=df_closer.sort_values(d_fd).copy()
+        if method=='linear':
+            # Interpolate linearly in-situ measurements to altimetry measurement times
+            # datast1_2_ts2dy = sc.griddata(dy_ts1, data_ts1, dy_ts2, method='linear')
+            df_closer['decimal_y']= np.array(list(map(yearmonthdayhourminutesec2decimalyear,
+                                                      df_closer[d_fd].array.year,
+                                                      df_closer[d_fd].array.month, 
+                                                      df_closer[d_fd].array.day, 
+                                                      df_closer[d_fd].array.hour,
+                                                      df_closer[d_fd].array.minute, df_closer[d_fd].array.second,)))
+            date_decimal=yearmonthdayhourminutesec2decimalyear(date.year,
+                                                      date.month, 
+                                                      date.day, 
+                                                      date.hour,
+                                                      date.minute, date.second)
+            print(df_closer[d_fd].to_numpy(), date)
+            print(df_closer['decimal_y'].to_numpy(), date_decimal)
+            print(df_closer[v_fd], 'Values')
+            value = sc.griddata(df_closer['decimal_y'].to_numpy(), df_closer[v_fd].to_numpy(), date_decimal, method=method)
+            print(value, 'This is the value')
+            criteria='linear'
+            mean=np.nan
+            
+        if method=='median':    
+            value =df_closer[v_fd].median(skipna=True)
+            criteria='median'
         mean=df_closer[v_fd].mean(skipna=True)
         std=df_closer[v_fd].std(skipna=True)
         mad=np.median(abs(df_closer[v_fd]-value))
+            
         
     # dict_output={'val_cd_d_'+str(delta)+:value,
     #              'type_cd_d_'+str(delta):criteria,
