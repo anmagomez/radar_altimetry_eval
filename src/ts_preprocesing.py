@@ -520,7 +520,7 @@ def closer_value_around_date(df, date, delta, v_fd, d_fd, method='median'):
     closer_date=df_t['diff_days'].min()
     df_closer=df_t.loc[df_t['diff_days']==closer_date].copy()
     if df_closer.shape[0]==1:
-        
+        # print('Solo hay uno que esta cerca')
         value = df_closer[v_fd].iloc[0]
         criteria='closer'
         mean=np.nan
@@ -542,17 +542,17 @@ def closer_value_around_date(df, date, delta, v_fd, d_fd, method='median'):
                                                       df_closer[d_fd].array.month, 
                                                       df_closer[d_fd].array.day, 
                                                       df_closer[d_fd].array.hour,
-                                                      df_closer[d_fd].array.minute, df_closer[d_fd].array.second,)))
+                                                      df_closer[d_fd].array.minute, df_closer[d_fd].array.second)))
             date_decimal=yearmonthdayhourminutesec2decimalyear(date.year,
                                                       date.month, 
                                                       date.day, 
                                                       date.hour,
                                                       date.minute, date.second)
-            print(df_closer[d_fd].to_numpy(), date)
-            print(df_closer['decimal_y'].to_numpy(), date_decimal)
-            print(df_closer[v_fd], 'Values')
+            # print(df_closer[d_fd].to_numpy(), date)
+            # print(df_closer['decimal_y'].to_numpy(), date_decimal)
+            # print(df_closer[v_fd], 'Values')
             value = sc.griddata(df_closer['decimal_y'].to_numpy(), df_closer[v_fd].to_numpy(), date_decimal, method=method)
-            print(value, 'This is the value')
+            # print(value, 'This is the value')
             criteria='linear'
             mean=np.nan
             
@@ -670,7 +670,7 @@ def get_date_time_cols(df, date_fd, has_hour=False, has_min=False):
     
     df['decimal_y'] = np.array(list(map(yearmonthdayhourminutesec2decimalyear,
                            df['year'].array,df['month'].array, df['day'].array, df['hour'].array, 
-                             np.zeros(df['year'].shape), np.zeros(df['year'].shape))))
+                             df[date_fd].dt.minute, df[date_fd].dt.second)))
     return df
 
 def convert_units(df,height_fd, origin='FEET', to='METER', unit_fd='unit',
