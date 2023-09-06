@@ -473,29 +473,57 @@ def get_common_period(df_ts1, df_ts2, date_ts1_fd, date_ts2_fd, delta_days=False
     
     return (df_ts1, df_ts2)
 
-def moving_window_around_date(df, date, delta, v_fd, d_fd):
+def moving_window_around_date(df, date, delta, v_fd, d_fd, method='median'):
     '''Moving window of a value around a date +- n days defined by delta
         Inputs:
             df: Dataframe containing the dates and values
             date: date around the one the moving window will be done
             v_fd: name of the value column in df
             d_fd: name of the date column in df
+            method: Method used to get the value within the window. Default median, Other option 'linear' for linear interpolation
         Output:
            In order in the window
-           median
-           mean 
+           median or interpolate value depending on method
+           mad in the window
+           mean in the window
            std: standard deviation 
            number of not null values used for the mean and the median
+           criteria: method used 'median' or 'linear'
            
     '''
     df_t=df.loc[(df[d_fd]>=(date-dt.timedelta(days=delta)))&(df[d_fd]<=(date+dt.timedelta(days=delta)))].copy()
-    if df_t.shape[0]>=1:
-        median=df_t[v_fd].median(skipna=True)
-        mad=np.median(abs(df_t[v_fd]-median))
+    n_cd=df_t[v_fd].count()
+    if n_cd>=1:
+        mean_w=df_t[v_fd].mean(skipna=True)
+        mad=np.median(abs(df_t[v_fd]-df_t[v_fd].median(skipna=True)))
+        if method=='median':
+            value=df_t[v_fd].median(skipna=True)
+            criteria='median'
+        elif method=='linear':
+            df_t['decimal_y']= np.array(list(map(yearmonthdayhourminutesec2decimalyear,
+                                                      df_t[d_fd].array.year,
+                                                      df_t[d_fd].array.month, 
+                                                      df_t[d_fd].array.day, 
+                                                      df_t[d_fd].array.hour,
+                                                      df_t[d_fd].array.minute, 
+                                                      df_t[d_fd].array.second)))
+            date_decimal=yearmonthdayhourminutesec2decimalyear(date.year,
+                                                      date.month, 
+                                                      date.day, 
+                                                      date.hour,
+                                                      date.minute, date.second)
+            # print(df_closer[d_fd].to_numpy(), date)
+            # print(df_closer['decimal_y'].to_numpy(), date_decimal)
+            # print(df_closer[v_fd], 'Values')
+            value = sc.griddata(df_t['decimal_y'].to_numpy(), df_t[v_fd].to_numpy(), date_decimal, method=method)
+            # print(value, 'This is the value')
+            criteria='linear'
     else:
-        median=np.nan
+        value=np.nan
         mad=np.nan
-    return df_t[v_fd].median(skipna=True),mad, df_t[v_fd].mean(skipna=True),df_t[v_fd].std(skipna=True), df_t[v_fd].count()
+        mean_w=np.nan
+        criteria=np.nan
+    return value,mad, mean_w,df_t[v_fd].std(skipna=True), n_cd, criteria
 
 def closer_value_around_date(df, date, delta, v_fd, d_fd, method='median'):
     '''Moving window of a value around a date (targeting date) +- n days defined by delta
@@ -513,25 +541,30 @@ def closer_value_around_date(df, date, delta, v_fd, d_fd, method='median'):
             n_cd: number of data used to calculate value
             mea_cd: mean of the values in case ndays >1. nan if ndays==1
             std_cd: std of the values in case ndays>1. nan if ndays==1
+            no_days: distance between the target date and the closest day
     '''
     df_t=df.loc[(df[d_fd]>=(date-dt.timedelta(days=delta)))&(df[d_fd]<=(date+dt.timedelta(days=delta)))].copy()
     df_t=df_t.sort_values(by=[d_fd])
     df_t['diff_days']=df_t[d_fd].apply(lambda x: (date-x)/np.timedelta64(1,'D')).abs()
     closer_date=df_t['diff_days'].min()
     df_closer=df_t.loc[df_t['diff_days']==closer_date].copy()
-    if df_closer.shape[0]==1:
+    no_days=closer_date
+    n_cd = df_closer[v_fd].count()
+    if n_cd==1:
         # print('Solo hay uno que esta cerca')
         value = df_closer[v_fd].iloc[0]
         criteria='closer'
         mean=np.nan
         std=np.nan
         mad=np.nan
-    elif df_closer.shape[0]==0:
+        
+    elif n_cd==0:
         value=np.nan
         criteria=np.nan
         mean=np.nan
         std=np.nan
         mad=np.nan
+        
     else:
         # df_closer=df_closer.sort_values(d_fd).copy()
         if method=='linear':
@@ -575,12 +608,11 @@ def closer_value_around_date(df, date, delta, v_fd, d_fd, method='median'):
     val_cd = value
     type_cd = criteria
     ndays_cd= closer_date
-    n_cd = df_closer[v_fd].count()
     mea_cd=mean
     std_cd=std
     mad_cd=mad
     # val_cd,type_cd,ndays_cd,mea_cd, std_cd,n_cd
-    return val_cd,type_cd,ndays_cd,mea_cd, mad_cd, std_cd,n_cd
+    return val_cd,type_cd,ndays_cd,mea_cd, mad_cd, std_cd,n_cd, no_days
 
 # Pending add interpolation 
 
