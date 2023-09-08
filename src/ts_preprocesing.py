@@ -480,7 +480,8 @@ def moving_window_around_date(df, date, delta, v_fd, d_fd, method='median'):
             date: date around the one the moving window will be done
             v_fd: name of the value column in df
             d_fd: name of the date column in df
-            method: Method used to get the value within the window. Default median, Other option 'linear' for linear interpolation
+            method: Method used to get the value within the window. Default median, Other option 'linear' for linear interpolation. 
+                    if option chosen is 'linear' and only one value is on the window
         Output:
            In order in the window
            median or interpolate value depending on method
@@ -493,7 +494,12 @@ def moving_window_around_date(df, date, delta, v_fd, d_fd, method='median'):
     '''
     df_t=df.loc[(df[d_fd]>=(date-dt.timedelta(days=delta)))&(df[d_fd]<=(date+dt.timedelta(days=delta)))].copy()
     n_cd=df_t[v_fd].count()
-    if n_cd>=1:
+    if n_cd==1 and method=='linear':
+        value=np.nan
+        mad=np.nan
+        mean_w=np.nan
+        criteria=np.nan
+    elif n_cd>=1:
         mean_w=df_t[v_fd].mean(skipna=True)
         mad=np.median(abs(df_t[v_fd]-df_t[v_fd].median(skipna=True)))
         if method=='median':
@@ -514,7 +520,7 @@ def moving_window_around_date(df, date, delta, v_fd, d_fd, method='median'):
                                                       date.minute, date.second)
             # print(df_closer[d_fd].to_numpy(), date)
             # print(df_closer['decimal_y'].to_numpy(), date_decimal)
-            # print(df_closer[v_fd], 'Values')
+            # print(df_t[v_fd], 'Values\n')
             value = sc.griddata(df_t['decimal_y'].to_numpy(), df_t[v_fd].to_numpy(), date_decimal, method=method)
             # print(value, 'This is the value')
             criteria='linear'
