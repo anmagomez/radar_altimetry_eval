@@ -44,7 +44,7 @@ def plot_dev_mean(nfig,dfs, dfg, dfi, source, st_id, altis_name, date_fd, height
 
 #Plots
 #Plot deviation of the mean from satellite, groound observations and interpolated points
-def plot_dev_mean_publish(fig,nfig,dfs, dfg, source, st_id, altis_name, date_fd, height_fd, labels, labelg, fill_between=None, error_m_text=None, output_f=None):
+def plot_dev_mean_publish(fig,nfig,dfs, dfg, source, st_id, altis_name, date_fd, height_fd_g,  height_fd_s, labels, labelg, fill_between=None, error_m_text=None, output_f=None):
     #plt.figure(nfig, figsize=(20, 6))
     
     if 'Sentinel-3A' in altis_name:
@@ -80,21 +80,21 @@ def plot_dev_mean_publish(fig,nfig,dfs, dfg, source, st_id, altis_name, date_fd,
     
     for n, i in enumerate(indices):
         if n == 0:
-            plt.plot(dfg[date_fd].to_numpy()[:i], (dfg[height_fd]-dfg[height_fd].mean()).to_numpy()[:i], linestyle='solid',
-                    markerfacecolor='#7570b3',markeredgecolor='#7570b3',color='#7570b3',marker='o', markersize=3)#, label=labelg)
+            plt.plot(dfg[date_fd].to_numpy()[:i], (dfg[height_fd_g]-dfg[height_fd_g].mean()).to_numpy()[:i], linestyle='solid',
+                    markerfacecolor='#7570b3',markeredgecolor='#7570b3',color='#7570b3',marker='o', markersize=5)#, label=labelg)
         else:
-            plt.plot(dfg[date_fd].to_numpy()[indices[n - 1]:i], (dfg[height_fd]-dfg[height_fd].mean()).to_numpy()[indices[n - 1]:i], linestyle='solid', markerfacecolor='#7570b3',markeredgecolor='#7570b3',color='#7570b3',marker='o', markersize=3) #, label=labelg)
+            plt.plot(dfg[date_fd].to_numpy()[indices[n - 1]:i], (dfg[height_fd_g]-dfg[height_fd_g].mean()).to_numpy()[indices[n - 1]:i], linestyle='solid', markerfacecolor='#7570b3',markeredgecolor='#7570b3',color='#7570b3',marker='o', markersize=5) #, label=labelg)
 
     #Plot the last part of the series. If not gaps it plots the complete series
     if len(indices)==0:
         i=0
     
     l_idx=len(temp_diff.to_numpy())
-    plt.plot(dfg[date_fd].to_numpy()[i:l_idx], (dfg[height_fd]-dfg[height_fd].mean()).to_numpy()[i:l_idx], linestyle='solid',
+    plt.plot(dfg[date_fd].to_numpy()[i:l_idx], (dfg[height_fd_g]-dfg[height_fd_g].mean()).to_numpy()[i:l_idx], linestyle='solid',
                     markerfacecolor='#7570b3',markeredgecolor='#7570b3',color='#7570b3',marker='o', markersize=3) #, label=labelg)
     
     splot=plt.plot(dfs[date_fd], 
-                   dfs[height_fd]-np.nanmean(dfs[height_fd]), linestyle='None',marker=marker, 
+                   dfs[height_fd_s]-np.nanmean(dfs[height_fd_s]), linestyle='None',marker=marker, 
                    markerfacecolor=markerfacecolor,markeredgecolor=markerfacecolor,markersize=markersize, label=labels)
     
     # if error_m_text is not None:
@@ -121,13 +121,13 @@ def plot_dev_mean_publish(fig,nfig,dfs, dfg, source, st_id, altis_name, date_fd,
     plt.ylim(ymin,ymax)
     ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m'))
     for label in ax.get_xticklabels(which='major'):
-        label.set(rotation=45, horizontalalignment='right', fontsize=12)
+        label.set(rotation=45, horizontalalignment='right', fontsize=18)
     for ylabel in ax.get_yticklabels(which='major'):
-        ylabel.set(fontsize=12)
+        ylabel.set(fontsize=18)
         
     fig.tight_layout(h_pad=3, w_pad=2)
     # plt.legend(loc='lower right')
-    plt.title(labelg+error_m_text, size=14,
+    plt.title(labelg+error_m_text, size=20,
               weight='bold')
 
 
