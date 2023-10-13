@@ -937,3 +937,24 @@ def remove_extreme_data(df,df_diff_to_remove, date_fd, height_fd, diff_fd):
     df.loc[mask,height_fd]=hg-np.round(diff_replace.iloc[0],decimals=2)
     df[diff_fd]=df[height_fd].diff()
     return df
+
+def aggregage_values_by_group(df, group_by_fds, sum_dict):
+    ''' Agregate values in a dataframe, leaving one index instead of multiindex as columns
+        Inputs:
+        df: datatrame to aggregate
+        group_by_fds: columns to group by the dataframe and do the aggregation
+        sum_dict: desired aggregations for the data 
+        
+        TODO: Include example
+        ''''
+    df = df.groupby(group_by_fds).aggregate(sum_dict)
+    df.columns = ['_'.join([str(c) for c in col]).strip() for col in df.columns.values]
+    if isinstance(df, (pd.DatetimeIndex, pd.MultiIndex)):
+        df = df.to_frame(index=False)
+    return df.reset_index()
+
+def change_df_col_names(df, new_colnames):
+    '''Change all the names of a dataframe by the names in new_colnames. The columns are changed in the same order of new_colnames'''
+    for nn in new_colnames:
+        df.rename(columns={df.columns[new_colnames.index(nn)]:nn}, inplace=True) 
+    return df
