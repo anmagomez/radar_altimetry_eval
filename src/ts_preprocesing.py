@@ -946,7 +946,7 @@ def aggregage_values_by_group(df, group_by_fds, sum_dict):
         sum_dict: desired aggregations for the data 
         
         TODO: Include example
-        ''''
+    '''
     df = df.groupby(group_by_fds).aggregate(sum_dict)
     df.columns = ['_'.join([str(c) for c in col]).strip() for col in df.columns.values]
     if isinstance(df, (pd.DatetimeIndex, pd.MultiIndex)):
