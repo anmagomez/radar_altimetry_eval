@@ -677,7 +677,12 @@ def get_comp_metrics(ts_obs,ts_est):
         me_br=np.nanmean((vec2corrcoef[0, :]-vec2corrcoef[1, :]))
         #variance of error
         ve=np.nanmean(np.square(ei - me))
+        size_obs=datats2_commonts1.size
+        size_est=datats1_commonts2.size
+        
     else:
+        datats2_commonts1=np.nan
+        datats1_commonts2=np.nan
         corr_ts1ts2 = np.nan
         ns_ts2 = np.nan
         rmsd_ts2 = np.nan
@@ -688,11 +693,14 @@ def get_comp_metrics(ts_obs,ts_est):
         p_value_scipy=np.nan
         s_corr_scipy=np.nan
         s_value_scipy=np.nan
+        me_br=np.nan
+        size_obs=np.nan
+        size_est=np.nan
     # print ('non bias corrected', me) 
     # print ('non bias removed', me_br) 
     results={'PR':p_corr_scipy,'PR_p_val':p_value_scipy,'RHO':s_corr_scipy,'RHO_p_val':s_value_scipy,
          'NSF':ns_ts2,'RMSE_ts2':rmsd_ts2,'ampl_ts1':ampl_ts1,'me':me,'me_bias_corr':me_br,'ve':ve,
-         'size_obs':datats2_commonts1.size, 'size_est':datats1_commonts2.size, 
+         'size_obs':size_obs, 'size_est':size_est, 
          'obs':datats2_commonts1, 'GDR':datats1_commonts2}
     return results
 
