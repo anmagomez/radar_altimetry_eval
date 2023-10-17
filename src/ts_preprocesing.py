@@ -13,7 +13,7 @@ import scipy.stats
   
 '''Functions developed by Sylvain Biancamaria'''
             
-def decimalyear2yearmonthdayhour(self, decimaltime_curr):
+def decimalyear2yearmonthdayhour(decimaltime_curr):
     '''
     Function to convert time vector in decimal year to
     correponding year, month, day and hour for each date
@@ -377,7 +377,16 @@ def load_altis(falti, ncoldate, ncolh, ncolobs,ncolgeoid=None, nodataalti=-9999,
 
 
 
-#####Other functions
+#####Other functions made by Angelica
+
+def convert_tuple_2_date(date_tuple):
+    ''' Recieves a tuple with year, month, day and hour and convert it to a datetime '''
+    #TODO Validate function
+    y=date_tuple[0]
+    m=date_tuple[1]
+    d=date_tuple[2]
+    h=date_tuple[3]
+    return dt.datetime(y,m,d,h)
 
 def open_match_station_altis(g_path,altis_name, st_fd, df_gts, st_id,altis_date_fd, altis_height_fd, n_obs_altis,nodataalti=-9999, ncolgeoid=None,wse_ref='g'):
     '''Match data from altimeter with data from the station
@@ -421,11 +430,13 @@ def open_match_station_altis(g_path,altis_name, st_fd, df_gts, st_id,altis_date_
     
     return (df_altis, df_gts_st)
 
-def get_common_period(df_ts1, df_ts2, date_ts1_fd, date_ts2_fd, delta_days=False, ndays=0):
+def get_common_period(df_ts1, df_ts2, date_ts1_fd, date_ts2_fd, delta_days=False, ndays=0, decimal_date=False):
     '''Get the common period of time between two time series, df_ts1 and df_ts2
-        WARNING: If not timezone information in any of the dataframe, utc is assumed 
+        WARNING: If working with dates and not timezone information in any of the dataframe, utc is assumed 
         It can return the common period + or - a number of days based on df_ts1
-        Assume both dataframe datetime is utc
+        Assume both dataframe datetime is utc or a decimal time with the same reference initial time
+        If decimal_date=False (default) datetime is assumed delta_days and ndays are valid to work with. 
+        If decimal_date is true, common period is +- .1 decimal units (#TODO: make this more elegant, check if decimal columns are decimal)
         If delta_days=False, ndays is assume =0, returns a common dataframe with the interception between the two dataframes
         If delta_days=True, ndays has to be different from 0
             Rules:
@@ -434,42 +445,69 @@ def get_common_period(df_ts1, df_ts2, date_ts1_fd, date_ts2_fd, delta_days=False
                 if df_ts1 ends earlier than df_ts2, common period ends ndays later than final time of df_ts1
                 if df_ts1 ends later than df_ts2, common period end at the final time of df_ts2
     '''
-    
-    if delta_days==True and ndays<=0:
+    if decimal_date:
         #TODO:Convert this to raise exceptions
-        print('Error ndays cannot be 0 or lower if delta_days=True')
-        return None
-    if delta_days==False:
-        ndays=0
-    
-    utc=pytz.utc
-    
-    #Min and max dates in df_ts1 and df_ts2
-    if df_ts1[date_ts1_fd].dt.tz is None:
-        df_ts1[date_ts1_fd]=[utc.localize(date) for date in df_ts1[date_ts1_fd]]
+        if delta_days:
+            print('Error ndays or delta_days will be ignored if decimal_date=True')
+            return None
         
-    if df_ts2[date_ts2_fd].dt.tz is None:
-        df_ts2[date_ts2_fd]=[utc.localize(date) for date in df_ts2[date_ts2_fd]]
+        earlier_date_ts1=min(df_ts1[date_ts1_fd])
+        final_date_ts1=max(df_ts1[date_ts1_fd])
         
-    earlier_date_ts1=min(df_ts1[date_ts1_fd])
-    final_date_ts1=max(df_ts1[date_ts1_fd])
+        earlier_date_ts2=min(df_ts2[date_ts2_fd])
+        final_date_ts2=max(df_ts2[date_ts2_fd])
         
-    earlier_date_ts2=min(df_ts2[date_ts2_fd])
-    final_date_ts2=max(df_ts2[date_ts2_fd])
+        if earlier_date_ts1 >= earlier_date_ts2:
+            initial_date=earlier_date_ts1 - 0.1
+        else:
+            initial_date=earlier_date_ts2
 
-    if earlier_date_ts1 >= earlier_date_ts2:
-        initial_date=earlier_date_ts1 - dt.timedelta(days=ndays)
+        if final_date_ts1 >= final_date_ts2:
+            end_date=final_date_ts2
+        else:
+            end_date=final_date_ts1 + 0.1
+        
+        #filter dataframes
+        df_ts1=df_ts1.loc[(df_ts1[date_ts1_fd]>=initial_date)&(df_ts1[date_ts1_fd]<=end_date)].copy()
+        df_ts2=df_ts2.loc[(df_ts2[date_ts2_fd]>=initial_date)&(df_ts2[date_ts2_fd]<=end_date)].copy()
+        
     else:
-        initial_date=earlier_date_ts2
-
-    if final_date_ts1 >= final_date_ts2:
-        end_date=final_date_ts2
-    else:
-        end_date=final_date_ts1 + dt.timedelta(days=ndays)
     
-    #filter dataframes
-    df_ts1=df_ts1.loc[(df_ts1[date_ts1_fd]>=initial_date)&(df_ts1[date_ts1_fd]<=end_date)].copy()
-    df_ts2=df_ts2.loc[(df_ts2[date_ts2_fd]>=initial_date)&(df_ts2[date_ts2_fd]<=end_date)].copy()
+        if delta_days==True and ndays<=0:
+            #TODO:Convert this to raise exceptions
+            print('Error ndays cannot be 0 or lower if delta_days=True')
+            return None
+        if delta_days==False:
+            ndays=0
+
+        utc=pytz.utc
+
+        #Min and max dates in df_ts1 and df_ts2
+        if df_ts1[date_ts1_fd].dt.tz is None:
+            df_ts1[date_ts1_fd]=[utc.localize(date) for date in df_ts1[date_ts1_fd]]
+
+        if df_ts2[date_ts2_fd].dt.tz is None:
+            df_ts2[date_ts2_fd]=[utc.localize(date) for date in df_ts2[date_ts2_fd]]
+
+        earlier_date_ts1=min(df_ts1[date_ts1_fd])
+        final_date_ts1=max(df_ts1[date_ts1_fd])
+
+        earlier_date_ts2=min(df_ts2[date_ts2_fd])
+        final_date_ts2=max(df_ts2[date_ts2_fd])
+
+        if earlier_date_ts1 >= earlier_date_ts2:
+            initial_date=earlier_date_ts1 - dt.timedelta(days=ndays)
+        else:
+            initial_date=earlier_date_ts2
+
+        if final_date_ts1 >= final_date_ts2:
+            end_date=final_date_ts2
+        else:
+            end_date=final_date_ts1 + dt.timedelta(days=ndays)
+
+        #filter dataframes
+        df_ts1=df_ts1.loc[(df_ts1[date_ts1_fd]>=initial_date)&(df_ts1[date_ts1_fd]<=end_date)].copy()
+        df_ts2=df_ts2.loc[(df_ts2[date_ts2_fd]>=initial_date)&(df_ts2[date_ts2_fd]<=end_date)].copy()
     
     return (df_ts1, df_ts2)
 
