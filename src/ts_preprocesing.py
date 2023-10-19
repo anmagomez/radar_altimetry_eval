@@ -588,12 +588,17 @@ def closer_value_around_date(df, date, delta, v_fd, d_fd, method='median'):
             no_days: distance between the target date and the closest day
     '''
     df_t=df.loc[(df[d_fd]>=(date-dt.timedelta(days=delta)))&(df[d_fd]<=(date+dt.timedelta(days=delta)))].copy()
-    df_t=df_t.sort_values(by=[d_fd])
-    df_t['diff_days']=df_t[d_fd].apply(lambda x: (date-x)/np.timedelta64(1,'D')).abs()
-    closer_date=df_t['diff_days'].min()
-    df_closer=df_t.loc[df_t['diff_days']==closer_date].copy()
-    no_days=closer_date
-    n_cd = df_closer[v_fd].count()
+    if not df_t.empty:
+        df_t=df_t.sort_values(by=[d_fd])
+        df_t['diff_days']=df_t[d_fd].apply(lambda x: (date-x)/np.timedelta64(1,'D')).abs()
+        closer_date=df_t['diff_days'].min()
+        df_closer=df_t.loc[df_t['diff_days']==closer_date].copy()
+        no_days=closer_date
+        n_cd = df_closer[v_fd].count()
+    else:
+        
+        n_cd=0
+        
     if n_cd==1:
         # print('Solo hay uno que esta cerca')
         value = df_closer[v_fd].iloc[0]
@@ -608,6 +613,8 @@ def closer_value_around_date(df, date, delta, v_fd, d_fd, method='median'):
         mean=np.nan
         std=np.nan
         mad=np.nan
+        closer_date=-1
+        no_days=-1
         
     else:
         # df_closer=df_closer.sort_values(d_fd).copy()
