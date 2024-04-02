@@ -51,17 +51,17 @@ def plot_dev_mean_publish(fig,nfig,dfs, dfg, source, st_id, altis_name, date_fd,
         markerfacecolor='#D81B60'
         markeredgecolor='#D81B60'
         marker='o'
-        markersize=5
+        markersize=8
     elif 'Sentinel-3B' in altis_name:
-        markerfacecolor='#000000'
-        markeredgecolor='#000000'
-        marker='o'
-        markersize=5
+        markerfacecolor='#DE8D13'
+        markeredgecolor='#DE8D13'
+        marker='^'
+        markersize=8
     else:
         markerfacecolor='#004D40'
         markeredgecolor='#004D40'
         marker='*'
-        markersize=8
+        markersize=10
 
     #Azul#0000FF
     ax=plt.gca()
@@ -77,13 +77,13 @@ def plot_dev_mean_publish(fig,nfig,dfs, dfg, source, st_id, altis_name, date_fd,
     indices = np.where(np.abs(temp_diff.to_numpy()) >= 14400)[0] 
 
     #Plot only the lines between the intervals of continues measurements
-    
+    ground_obs_color='#7E7AAD'
     for n, i in enumerate(indices):
         if n == 0:
             plt.plot(dfg[date_fd].to_numpy()[:i], (dfg[height_fd_g]-dfg[height_fd_g].mean()).to_numpy()[:i], linestyle='solid',
-                    markerfacecolor='#7570b3',markeredgecolor='#7570b3',color='#7570b3',marker='o', markersize=5)#, label=labelg)
+                    markerfacecolor=ground_obs_color,markeredgecolor=ground_obs_color,color=ground_obs_color,marker='o', markersize=5)#, label=labelg)
         else:
-            plt.plot(dfg[date_fd].to_numpy()[indices[n - 1]:i], (dfg[height_fd_g]-dfg[height_fd_g].mean()).to_numpy()[indices[n - 1]:i], linestyle='solid', markerfacecolor='#7570b3',markeredgecolor='#7570b3',color='#7570b3',marker='o', markersize=5) #, label=labelg)
+            plt.plot(dfg[date_fd].to_numpy()[indices[n - 1]:i], (dfg[height_fd_g]-dfg[height_fd_g].mean()).to_numpy()[indices[n - 1]:i], linestyle='solid', markerfacecolor=ground_obs_color,markeredgecolor=ground_obs_color,color=ground_obs_color,marker='o', markersize=5) #, label=labelg)
 
     #Plot the last part of the series. If not gaps it plots the complete series
     if len(indices)==0:
@@ -91,7 +91,7 @@ def plot_dev_mean_publish(fig,nfig,dfs, dfg, source, st_id, altis_name, date_fd,
     
     l_idx=len(temp_diff.to_numpy())
     plt.plot(dfg[date_fd].to_numpy()[i:l_idx], (dfg[height_fd_g]-dfg[height_fd_g].mean()).to_numpy()[i:l_idx], linestyle='solid',
-                    markerfacecolor='#7570b3',markeredgecolor='#7570b3',color='#7570b3',marker='o', markersize=3) #, label=labelg)
+                    markerfacecolor=ground_obs_color,markeredgecolor=ground_obs_color,color=ground_obs_color,marker='o', markersize=4) #, label=labelg)
     
     splot=plt.plot(dfs[date_fd], 
                    dfs[height_fd_s]-np.nanmean(dfs[height_fd_s]), linestyle='None',marker=marker, 
@@ -103,7 +103,7 @@ def plot_dev_mean_publish(fig,nfig,dfs, dfg, source, st_id, altis_name, date_fd,
     # plt.xlabel('Time (decimal year)', size=15, weight='bold')
     # plt.ylabel('Water elev. dev from mean (m)', size=15, weight='bold')
     # plt.grid('on')
-    plt.grid(color='#808080', linestyle='-.', linewidth=0.5)
+    plt.grid(color='#808080', linestyle='-.', linewidth=0.7)
     ymin,ymax=plt.ylim()
     if abs(ymin)>abs(ymax):
         ymax=abs(ymin)+0.1
@@ -121,13 +121,13 @@ def plot_dev_mean_publish(fig,nfig,dfs, dfg, source, st_id, altis_name, date_fd,
     plt.ylim(ymin,ymax)
     ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m'))
     for label in ax.get_xticklabels(which='major'):
-        label.set(rotation=45, horizontalalignment='right', fontsize=18)
+        label.set(rotation=45, horizontalalignment='right', fontsize=20)
     for ylabel in ax.get_yticklabels(which='major'):
-        ylabel.set(fontsize=18)
+        ylabel.set(fontsize=20)
         
     fig.tight_layout(h_pad=3, w_pad=2)
     # plt.legend(loc='lower right')
-    plt.title(labelg+error_m_text, size=20,
+    plt.title(labelg+error_m_text, size=22,
               weight='bold')
 
 
