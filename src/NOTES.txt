@@ -1,3 +1,0 @@
-# To install programs in pandas
-# %pip install pandas
-#From https://discourse.jupyter.org/t/python-in-terminal-finds-module-jupyter-notebook-does-not/2262/7
