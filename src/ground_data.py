@@ -7,11 +7,11 @@ class GroundObservations:
     
     def __init__(self):
         #Initialize all the path variables. Change when services can be stablished directly 
-        self.usgs_path='../data/USGS_data_gages.csv'
-        self.arhn_path='../data/sel_argentina/'
-        self.locss_r_path='../data/readings_up_to_20220511.csv'
-        self.locss_g_path='../data/gauges_up_to_20220404.csv'
-        self.rvbr_path='../data/brasil/'
+        self.usgs_path='../data/source_in_situ/USGS_data_gages.csv'
+        self.arhn_path='../data/source_in_situ/sel_argentina/'
+        self.locss_r_path='../data/source_in_situ/readings_up_to_20220511.csv'
+        self.locss_g_path='../data/source_in_situ/gauges_up_to_20220404.csv'
+        self.rvbr_path='../data/source_in_situ/brasil/'
     
     def read_ground_data(self, source, file_type='.csv', date_fd=None, time_fd=None,
                          id_fd=None, height_fd=None, station_id=None, path=None, skip_rows=0):
