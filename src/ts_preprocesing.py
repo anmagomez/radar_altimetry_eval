@@ -876,9 +876,9 @@ def filter_extreme_duplicates(df_start, st_id, date_fd,height_fd, cols, cut_off,
         df['diff_val']=df[height_fd].diff()
         
         # Default 1 min difference 
-        
-        df['diff_date']=df[date_fd].diff().apply(lambda x: x/np.timedelta64(1, 'm')).fillna(0).astype('int64') #Difference in minutes
-        df_dp=pd.concat([df.loc[(df['diff_date']<1).shift(-1).fillna(True)],df.loc[(df['diff_date']<1)&(~df['diff_val'].isnull())]]).sort_values(by=date_fd).copy()
+        with pd.option_context('future.no_silent_downcasting', True):
+            df['diff_date']=df[date_fd].diff().apply(lambda x: x/np.timedelta64(1, 'm')).fillna(0).infer_objects().astype('int64') #Difference in minutes
+            df_dp=pd.concat([df.loc[(df['diff_date']<1).shift(-1).fillna(True)],df.loc[(df['diff_date']<1)&(~df['diff_val'].isnull())]]).sort_values(by=date_fd).copy()
         
         if exact_date:
             date_duplicate_mask=df[date_fd].duplicated(keep=False) #inquire weather the dates are duplicated mark all duplicates at true
